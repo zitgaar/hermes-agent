@@ -1,0 +1,488 @@
+{
+  "contract_id": "ka_spec.OKR-20260629-005.KA-001.round-001.87f6432a3e2",
+  "contract_type": "ka_spec",
+  "contract_version": "okr_typed_contract.v1",
+  "ka_id": "KA-001",
+  "okr_id": "OKR-20260629-005",
+  "payload": {
+    "acceptance_criteria": [
+      "No JSONL event is created and the function returns false/no-op without raising.",
+      "JSONL contains schema_version, event_id, session_id, new_state=checkout_needed, status=completed, requires_human=true, event_stage=turn_finalized_raw, provisional=true, notification_ready=false.",
+      "session_id/profile/source/title_or_unknown are all present; unavailable values use explicit unknown markers and are not guessed.",
+      "Failed/partial/empty maps to new_state=failed; interrupted maps to new_state=interrupted; neither is reported as checkout_needed.",
+      "The JSONL event does not contain the original secret-like substrings in excerpt, evidence, or nested metadata.",
+      "It returns false/logs warning and does not raise into the caller.",
+      "The hook is called once with result, task_id, turn_id, and agent; hook exception path does not break result return."
+    ],
+    "acceptance_scenarios": [
+      {
+        "given": "A temp Hermes config with watchtower omitted or watchtower.enabled=false.",
+        "id": "AS1_disabled_default_noop",
+        "required_evidence": [
+          "targeted pytest output",
+          "asserted event path missing or unchanged"
+        ],
+        "then": "No JSONL event is created and the function returns false/no-op without raising.",
+        "verification_method": "pytest unit test with temp HERMES_HOME and monkeypatched load_config.",
+        "when": "emit_turn_finalized_event is called with a completed result."
+      },
+      {
+        "given": "watchtower.enabled=true and a result with completed=true, failed=false, interrupted=false, final_response non-empty.",
+        "id": "AS2_completed_maps_checkout_needed_provisional",
+        "required_evidence": [
+          "sample JSONL line",
+          "pytest field assertions"
+        ],
+        "then": "JSONL contains schema_version, event_id, session_id, new_state=checkout_needed, status=completed, requires_human=true, event_stage=turn_finalized_raw, provisional=true, notification_ready=false.",
+        "verification_method": "pytest reads the JSONL line and asserts fields.",
+        "when": "The event is built and appended."
+      },
+      {
+        "given": "A finalized turn with session_id/profile/source/title context partially present and partially unavailable.",
+        "id": "AS3_identity_provenance_stable_or_unknown",
+        "required_evidence": [
+          "pytest output for identity/provenance cases",
+          "sample JSONL includes identity fields"
+        ],
+        "then": "session_id/profile/source/title_or_unknown are all present; unavailable values use explicit unknown markers and are not guessed.",
+        "verification_method": "pytest asserts populated and unknown fallback cases.",
+        "when": "The event is built."
+      },
+      {
+        "given": "One result is failed/partial/empty, and another result has interrupted=true.",
+        "id": "AS4_failure_and_interruption_mapping",
+        "required_evidence": [
+          "pytest output for parametrized mapping cases"
+        ],
+        "then": "Failed/partial/empty maps to new_state=failed; interrupted maps to new_state=interrupted; neither is reported as checkout_needed.",
+        "verification_method": "pytest parametrized tests for build_turn_finalized_event.",
+        "when": "Events are built."
+      },
+      {
+        "given": "final_response/evidence/guardrail metadata contains API-key/token/password-like strings.",
+        "id": "AS5_redaction",
+        "required_evidence": [
+          "pytest output",
+          "sanitized JSONL example"
+        ],
+        "then": "The JSONL event does not contain the original secret-like substrings in excerpt, evidence, or nested metadata.",
+        "verification_method": "pytest searches serialized JSON for the original secret string and expects absence.",
+        "when": "An event is written with redact=true."
+      },
+      {
+        "given": "The configured JSONL path cannot be opened for append.",
+        "id": "AS6_fail_open_on_write_error",
+        "required_evidence": [
+          "pytest assertion that no exception escapes"
+        ],
+        "then": "It returns false/logs warning and does not raise into the caller.",
+        "verification_method": "pytest monkeypatches Path.open or uses an invalid path to simulate OSError.",
+        "when": "append_jsonl_event or emit_turn_finalized_event runs."
+      },
+      {
+        "given": "finalize_turn completes result assembly with a stub agent/result path.",
+        "id": "AS7_finalizer_hook_called_once",
+        "required_evidence": [
+          "pytest output",
+          "test name proving hook call/fail-open behavior"
+        ],
+        "then": "The hook is called once with result, task_id, turn_id, and agent; hook exception path does not break result return.",
+        "verification_method": "pytest integration-style unit test around agent.turn_finalizer.finalize_turn, or a narrowly justified equivalent if full finalizer harness is too heavy.",
+        "when": "finalize_turn is executed in test with emit_turn_finalized_event monkeypatched."
+      }
+    ],
+    "allowed_changed_files": [
+      "agent/session_watchtower.py",
+      "agent/turn_finalizer.py",
+      "hermes_cli/config.py",
+      "tests/agent/test_session_watchtower.py",
+      "tests/agent/test_turn_finalizer_watchtower.py"
+    ],
+    "design_summary": "KA-001 establishes the Watchtower backend event substrate by using the shared run_conversation finalizer. It emits a compact, redacted, profile-scoped JSONL row only when watchtower.enabled and audit_log are true. The row is explicitly provisional: event_stage=turn_finalized_raw, provisional=true, notification_ready=false. This deliberately stops before fleet registry, debounce, Feishu renderer, interactive cards, or archive policy, so the first review can verify lifecycle facts without product-surface false claims.",
+    "dispatch_policy": {
+      "executor_allowed": true,
+      "executor_profile": "executor",
+      "gate_required": true,
+      "kanban_workflow_path": "round-001/contracts/KA-001-kanban-workflow.json",
+      "next_state": "READY_FOR_SPEC_AUDIT",
+      "non_claims": [
+        "human_accepted",
+        "production_ready",
+        "KR closed",
+        "Spec Gate pass",
+        "KA verified",
+        "Feishu delivered",
+        "interactive card works",
+        "notification_ready snapshot exists",
+        "product accepted"
+      ],
+      "pm_may_not_modify_okr_state_lifecycle_fields": true,
+      "reason": "Reviewer Spec Audit passed/warned; bridge normalized PM's pre-audit dispatch baton and now lets deterministic Spec Gate decide Executor dispatch.",
+      "requires_reviewer_verdict": true,
+      "reviewer_profile": "reviewer",
+      "single_active_ka": "KA-001",
+      "spec_audit_allowed": true,
+      "spec_audit_verdict": "SPEC_AUDIT_PASS"
+    },
+    "event_schema_contract": {
+      "downstream_guardrail": "KA-001 JSONL rows are audit inputs only. Later registry/snapshot/notification KAs must transform and verify them before treating any state as notification-ready.",
+      "identity_provenance_rule": "session_id/profile/source/title_or_unknown must be produced from backend session/agent context when available; if unavailable, write the literal unknown or equivalent explicit unknown marker. Do not infer or guess identity.",
+      "required_fields": [
+        "event_id",
+        "schema_version",
+        "event_stage",
+        "provisional",
+        "notification_ready",
+        "session_id",
+        "task_id",
+        "turn_id",
+        "profile",
+        "source",
+        "title_or_unknown",
+        "previous_state",
+        "new_state",
+        "status",
+        "turn_exit_reason",
+        "completed",
+        "failed",
+        "interrupted",
+        "event_at",
+        "duration_ms",
+        "final_response_excerpt",
+        "evidence_summary",
+        "requires_human",
+        "action_needed",
+        "confidence",
+        "metadata"
+      ],
+      "required_semantics": {
+        "event_stage": "turn_finalized_raw",
+        "failed_or_partial_or_empty_new_state": "failed",
+        "interrupted_new_state": "interrupted",
+        "normal_completed_new_state": "checkout_needed",
+        "notification_ready": false,
+        "provisional": true
+      }
+    },
+    "evidence_required": [
+      "git status --short --branch before and after",
+      "git diff for allowed files only",
+      "validation command real output",
+      "sanitized temp JSONL sample event containing event_stage/provisional/notification_ready/session identity fields",
+      "explicit separation: backend detected, audit written, notification_ready=false",
+      "explicit non-claims: no Feishu delivery, no registry, no debounce, no card buttons, no archive policy, no product acceptance, no KR closure"
+    ],
+    "exact_call_sites": [
+      "agent/turn_finalizer.py:380-409",
+      "agent/turn_finalizer.py:429-438",
+      "agent/turn_finalizer.py:484-495",
+      "agent/session_watchtower.py:25-59",
+      "agent/session_watchtower.py:179-199",
+      "hermes_cli/config.py:1292-1298",
+      "cli.py:11786-12199",
+      "tui_gateway/server.py:8372-8792",
+      "plugins/platforms/feishu/adapter.py:1835-1890, 1927-2064, 2582-2760"
+    ],
+    "failure_routes": [
+      {
+        "id": "FR-001",
+        "reason_code": "TEST_FAIL",
+        "route": "Executor writes failure details to evidence; Reviewer returns REJECTED or NEEDS_MORE_EVIDENCE."
+      },
+      {
+        "id": "FR-002",
+        "reason_code": "SCOPE_ESCALATION_REQUIRED",
+        "route": "If implementation needs forbidden files or Feishu/TUI changes, stop and ask PM for a new KA/rework spec."
+      },
+      {
+        "id": "FR-003",
+        "reason_code": "PREEXISTING_CHANGE_CONFLICT",
+        "route": "If current uncommitted watchtower prototype conflicts with this spec, preserve evidence and request PM decision; do not silently overwrite unrelated work."
+      },
+      {
+        "id": "FR-004",
+        "reason_code": "PRODUCT_OBJECT_MISMATCH",
+        "route": "If evidence proves only a helper/prototype rather than Hermes backend finalizer path, mark partial and route to rework."
+      },
+      {
+        "id": "FR-005",
+        "reason_code": "PROVISIONAL_EVENT_SEMANTIC_DRIFT",
+        "route": "If code or evidence treats the KA-001 event as notification-ready or final Watchtower state, block/rework until event_stage/provisional/notification_ready semantics are explicit."
+      },
+      {
+        "id": "FR-006",
+        "reason_code": "IDENTITY_PROVENANCE_MISSING",
+        "route": "If session_id/profile/source/title_or_unknown cannot be produced without guessing, write explicit unknown markers or request rework; do not invent identity."
+      },
+      {
+        "id": "FR-007",
+        "reason_code": "NEEDS_MORE_EVIDENCE",
+        "route": "If finalizer integration test is impractical in this slice, provide module tests plus gap note for Reviewer to decide rework."
+      }
+    ],
+    "forbidden_changed_files": [
+      "cli.py",
+      "tui_gateway/server.py",
+      "plugins/platforms/feishu/adapter.py",
+      "tools/send_message_tool.py",
+      "gateway/run.py",
+      "gateway/config.py",
+      "OKR_STATE.json",
+      ".env",
+      "auth.json",
+      "round-001/contracts/KA-001-reviewer-verdict.json",
+      "round-001/contracts/KA-001-pm-final.json"
+    ],
+    "inputs": [
+      "specs/KA-001.md",
+      "/Users/qitejia/hermes-artifacts/hermes-session-watchtower-okr-handoff-2026-06-29.md",
+      "/Users/qitejia/.hermes/okr_mvp_runtime/demands/OKR-20260629-005/OKR_STATE.json",
+      "round-001/contracts/KA-001-product-arch-discussion.json"
+    ],
+    "non_claims": [
+      "human_accepted",
+      "production_ready",
+      "KR closed",
+      "Spec Gate pass",
+      "KA verified",
+      "Feishu delivered",
+      "interactive card works",
+      "notification_ready snapshot exists",
+      "product accepted"
+    ],
+    "non_goals": [
+      "Do not send Feishu messages.",
+      "Do not implement SessionFleetRegistry.",
+      "Do not implement notification-ready fleet snapshot.",
+      "Do not implement debounce/rate limit/retry queue.",
+      "Do not implement interactive card/button callbacks.",
+      "Do not implement archive policy or auto-archive.",
+      "Do not claim product acceptance, production readiness, KR closure, Spec Gate pass, or KA verification."
+    ],
+    "objective": "在 Hermes turn-finalized 阶段建立 profile-scoped provisional JSONL 审计事实源，为后续 Fleet Registry / notification-ready snapshot / Feishu 接力通知打地基；本 KA 不提供通知就绪能力。",
+    "outputs": [
+      "agent/session_watchtower.py",
+      "agent/turn_finalizer.py",
+      "hermes_cli/config.py",
+      "tests/agent/test_session_watchtower.py",
+      "tests/agent/test_turn_finalizer_watchtower.py"
+    ],
+    "product_architecture_resolution": {
+      "adopted": [
+        "Treat KA-001 JSONL event as a provisional lifecycle audit event, not a final Watchtower notification snapshot.",
+        "Add explicit event_stage/provisional/notification_ready semantics so downstream KAs cannot confuse this event with notification readiness.",
+        "Make session identity/provenance mandatory: session_id/profile/source/title_or_unknown must be stable or explicitly unknown; guessing is forbidden.",
+        "Keep finalizer-first backend slice instead of expanding into TUI/CLI/Feishu hooks."
+      ],
+      "controlled_rerun_source_message_id": "om_[REDACTED_MESSAGE_ID]",
+      "minimal_visible_loop_for_this_ka": "Backend lifecycle event is written to profile-scoped JSONL and exposed through executor evidence as a reviewable artifact; this is not a live Feishu notification loop.",
+      "rejected_or_deferred": [
+        "Direct Feishu delivery, interactive cards, registry aggregation, debounce, buttons, archive policy, GUI/DOM monitoring are deferred out of KA-001."
+      ],
+      "zizi_decision": "第一阶段必须留下最小可见产品闭环。"
+    },
+    "required_evidence": [
+      "git status --short --branch before and after",
+      "git diff for allowed files only",
+      "validation command real output",
+      "sanitized temp JSONL sample event containing event_stage/provisional/notification_ready/session identity fields",
+      "explicit separation: backend detected, audit written, notification_ready=false",
+      "explicit non-claims: no Feishu delivery, no registry, no debounce, no card buttons, no archive policy, no product acceptance, no KR closure"
+    ],
+    "requirements": [
+      {
+        "id": "R01",
+        "required_evidence": [
+          "git diff for allowed files only",
+          "tests/agent/test_turn_finalizer_watchtower.py output"
+        ],
+        "requirement": "Use backend turn lifecycle only; no GUI/screenshot/DOM monitoring.",
+        "verification_method": "Inspect git diff and finalizer tests; no UI/Feishu/Gateway hook is introduced."
+      },
+      {
+        "id": "R02",
+        "required_evidence": [
+          "sample JSONL event",
+          "tests/agent/test_session_watchtower.py field assertions"
+        ],
+        "requirement": "Provide a stable TurnFinalizedLifecycleEvent schema with event_id, schema_version, event_stage, provisional, notification_ready, session_id, task_id, turn_id, profile, source, title_or_unknown, previous_state, new_state, status, turn_exit_reason, completed, failed, interrupted, event_at, duration_ms, final_response_excerpt, evidence_summary, requires_human, action_needed, confidence, metadata.",
+        "verification_method": "Pytest asserts JSONL/event fields and required semantics."
+      },
+      {
+        "id": "R03",
+        "required_evidence": [
+          "targeted pytest output",
+          "asserted event path missing or unchanged"
+        ],
+        "requirement": "Default config must be disabled: watchtower.enabled=false; enabling audit_log writes JSONL only.",
+        "verification_method": "Pytest disabled-config case asserts no JSONL creation/no-op."
+      },
+      {
+        "id": "R04",
+        "required_evidence": [
+          "temp HERMES_HOME path in test/evidence",
+          "JSONL path assertion"
+        ],
+        "requirement": "JSONL path must be profile-aware via get_hermes_home() for relative paths.",
+        "verification_method": "Pytest uses temp HERMES_HOME and relative event_log_path assertion."
+      },
+      {
+        "id": "R05",
+        "required_evidence": [
+          "sample completed JSONL event",
+          "pytest state mapping assertion"
+        ],
+        "requirement": "Normal completed turns must map to checkout_needed and requires_human=true, but checkout_needed is only a provisional audit state, not final product/notification readiness.",
+        "verification_method": "Pytest completed turn mapping asserts checkout_needed/requires_human while notification_ready=false."
+      },
+      {
+        "id": "R06",
+        "required_evidence": [
+          "sample JSONL event",
+          "pytest field assertions"
+        ],
+        "requirement": "Every event must encode event_stage=turn_finalized_raw, provisional=true, and notification_ready=false or exact equivalent semantics.",
+        "verification_method": "Pytest field assertions and sample JSONL include event_stage/provisional/notification_ready."
+      },
+      {
+        "id": "R07",
+        "required_evidence": [
+          "pytest identity/provenance output",
+          "sample JSONL identity fields"
+        ],
+        "requirement": "session_id/profile/source/title_or_unknown must be stable or explicitly unknown; do not guess provenance.",
+        "verification_method": "Pytest covers populated context and explicit unknown fallback cases."
+      },
+      {
+        "id": "R08",
+        "required_evidence": [
+          "pytest parametrized mapping output"
+        ],
+        "requirement": "failed/partial/empty final_response maps to failed; interrupted maps to interrupted.",
+        "verification_method": "Parametrized pytest covers failed/partial/empty/interrupted mappings."
+      },
+      {
+        "id": "R09",
+        "required_evidence": [
+          "pytest redaction output",
+          "sanitized JSONL example"
+        ],
+        "requirement": "Redact secret-like strings from final_response_excerpt, evidence_summary, and nested metadata/guardrail before writing.",
+        "verification_method": "Pytest serializes event and searches for original secret-like substrings."
+      },
+      {
+        "id": "R10",
+        "required_evidence": [
+          "pytest fail-open output",
+          "hook exception test output"
+        ],
+        "requirement": "emit_turn_finalized_event and append_jsonl_event must fail open: log/return false, never break final response delivery.",
+        "verification_method": "Pytest simulates write failure/hook exception and asserts caller result is preserved."
+      },
+      {
+        "id": "R11",
+        "required_evidence": [
+          "pytest fixture evidence",
+          "no real ~/.hermes write proof"
+        ],
+        "requirement": "Tests must use temp HERMES_HOME/config and must not touch real ~/.hermes.",
+        "verification_method": "Test fixtures monkeypatch HERMES_HOME/config; evidence must not point to real profile writes."
+      },
+      {
+        "id": "R12",
+        "required_evidence": [
+          "round-001/evidence/KA-001-executor-evidence.md"
+        ],
+        "requirement": "Executor evidence must clearly separate backend detected, audit written, and notification_ready=false; it must not imply Feishu delivery/product acceptance.",
+        "verification_method": "Executor evidence file must include explicit backend/audit/notification non-claims."
+      }
+    ],
+    "revision_reason": "Product Architecture marked the previous Spec NEEDS_PM_REVISION; PM accepted finalizer-first narrow slice, added provisional audit semantics and identity/provenance requirements, and reran the same Active KA after PA discussion resume-path repair.",
+    "schema": "ka_spec.v1",
+    "scope_level": "repo_patch",
+    "source_message_id": "om_[REDACTED_MESSAGE_ID]",
+    "spec_confidence": "high",
+    "spec_source": "revised_pm",
+    "status": "REWORK_SPEC_READY",
+    "target_base": "main worktree at /Users/qitejia/.hermes/hermes-agent; current git status: M agent/turn_finalizer.py, M hermes_cli/config.py, ?? .omo/, ?? agent/session_watchtower.py, ?? artifacts/. Existing watchtower files are draft input, not accepted completion.",
+    "target_paths": [
+      "agent/session_watchtower.py",
+      "agent/turn_finalizer.py",
+      "hermes_cli/config.py",
+      "tests/agent/test_session_watchtower.py",
+      "tests/agent/test_turn_finalizer_watchtower.py"
+    ],
+    "target_repo": "/Users/qitejia/.hermes/hermes-agent",
+    "tasks": [
+      {
+        "id": "T1",
+        "steps": [
+          "Run git status --short --branch.",
+          "Read agent/session_watchtower.py, agent/turn_finalizer.py, hermes_cli/config.py relevant sections.",
+          "Treat existing uncommitted watchtower files as draft input, not accepted completion."
+        ],
+        "title": "Inspect existing watchtower prototype and working tree"
+      },
+      {
+        "id": "T2",
+        "steps": [
+          "Complete TurnFinalizedLifecycleEvent fields required by this spec.",
+          "Implement deterministic mapping for checkout_needed, failed, interrupted.",
+          "Encode event_stage=turn_finalized_raw, provisional=true, notification_ready=false.",
+          "Keep unknown/best-effort context explicit instead of guessing."
+        ],
+        "title": "Finalize provisional event schema and state mapping"
+      },
+      {
+        "id": "T3",
+        "steps": [
+          "Populate session_id/profile/source/title_or_unknown from result/agent context when available.",
+          "Use explicit unknown markers when context is unavailable.",
+          "Do not derive profile/source/title from UI assumptions or guesses."
+        ],
+        "title": "Implement identity/provenance extraction"
+      },
+      {
+        "id": "T4",
+        "steps": [
+          "Parse watchtower config from hermes_cli.config.load_config().",
+          "Use get_hermes_home() for relative event_log_path.",
+          "Append one compact JSON object per line when enabled and audit_log=true.",
+          "On OSError/exception, return false and log warning only."
+        ],
+        "title": "Implement config-gated JSONL audit writer"
+      },
+      {
+        "id": "T5",
+        "steps": [
+          "Ensure agent/turn_finalizer.py calls emit_turn_finalized_event after result dict assembly.",
+          "Catch and log hook errors without changing final_response/result.",
+          "Do not move this to GUI/TUI/Feishu surfaces in KA-001."
+        ],
+        "title": "Keep finalizer hook fail-open"
+      },
+      {
+        "id": "T6",
+        "steps": [
+          "Create tests/agent/test_session_watchtower.py for config parser, event builder, JSONL append, redaction, fail-open, identity/provenance, provisional flags.",
+          "Create tests/agent/test_turn_finalizer_watchtower.py or equivalent integration test proving finalizer calls the hook once.",
+          "Use temp paths and monkeypatch; do not write real profile state."
+        ],
+        "title": "Add focused tests"
+      },
+      {
+        "id": "T7",
+        "steps": [
+          "Run scripts/run_tests.sh tests/agent/test_session_watchtower.py tests/agent/test_turn_finalizer_watchtower.py.",
+          "Capture real output and a sanitized sample JSONL event.",
+          "Write round-001/evidence/KA-001-executor-evidence.md with explicit backend/audit/notification non-claims."
+        ],
+        "title": "Validate and write evidence"
+      }
+    ],
+    "title": "KA-001 TurnFinalizedLifecycleEvent v1 local audit",
+    "validation_command": "scripts/run_tests.sh tests/agent/test_session_watchtower.py tests/agent/test_turn_finalizer_watchtower.py"
+  },
+  "producer_role": "pm",
+  "round_id": "round-001"
+}

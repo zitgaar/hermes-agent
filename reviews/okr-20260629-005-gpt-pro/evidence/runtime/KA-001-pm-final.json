@@ -1,0 +1,67 @@
+{
+  "contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+  "contract_type": "pm_final",
+  "contract_version": "okr_typed_contract.v1",
+  "created_at": "1782749088",
+  "ka_id": "KA-001",
+  "okr_id": "OKR-20260629-005",
+  "payload": {
+    "board_delta": {
+      "active_ka": {
+        "id": "KA-001",
+        "recommended_next_ka": "KA-002（建议下轮由 PM 重新冻结 Spec；本轮不把 KA-002 写成 active）",
+        "status": "KA_VERIFIED"
+      },
+      "bridge_correction": true,
+      "correction_reason": "Restored pm-final sidecar contract_id to match canonical OKR_STATE.last_lifecycle_contract_id after a failed duplicate correction script.",
+      "evidence_summary": [
+        "Reviewer typed verdict 为 KA_VERIFIED，reason_code=NONE，retry_policy=NONE。",
+        "Reviewer 复跑目标测试：scripts/run_tests.sh tests/agent/test_session_watchtower.py tests/agent/test_turn_finalizer_watchtower.py => 11 passed / 0 failed。",
+        "证据覆盖 event_stage=turn_finalized_raw、provisional=true、notification_ready=false、redaction、fail-open、finalizer hook、identity/provenance。",
+        "Executor evidence、validation output、sample JSONL、review artifact 与 typed sidecar 均已落盘。"
+      ],
+      "gaps": [
+        "本 KA 不覆盖 Feishu delivery、Fleet Registry、notification-ready snapshot、interactive card、archive policy。",
+        "repo 中未跟踪 .omo/ 与 artifacts/ 未作为 KA evidence；不阻塞 KA-001。"
+      ],
+      "kr_updates": {
+        "KR1": "支持增加：KA-001 事件已限定为 turn_finalized_raw provisional lifecycle audit event。",
+        "KR2": "支持增加：notification_ready=false 硬边界已被样例、代码与测试验证。",
+        "KR3": "支持增加：session_id/profile/source/title_or_unknown provenance 已验证，缺失时显式 unknown。",
+        "KR4": "保持有效：typed ka_spec sidecar 已通过 Spec Gate，本轮 Reviewer 按该合同验收。"
+      },
+      "needs_zizi_decision": "无",
+      "objective": "建立 Hermes turn-finalized 后端事实源，先留下可审计的最小可见闭环。",
+      "pm_state_write_boundary": "PM 仅写 pm_final sidecar；OKR_STATE.status/rounds/last_verdict/ready_for_next_at 由 bridge 根据 reviewer_verdict + pm_final 推进。",
+      "reason_code": "NONE",
+      "retry_policy": "NONE",
+      "status": "KA_VERIFIED",
+      "status_after": "READY_FOR_NEXT",
+      "status_transition": {
+        "authority": "reviewer_verdict",
+        "from": "READY_FOR_REVIEW",
+        "lifecycle_writer": "bridge",
+        "to": "READY_FOR_NEXT_KA"
+      }
+    },
+    "next_action": "READY_FOR_NEXT",
+    "non_claims": [
+      "human_accepted",
+      "production_ready",
+      "KR closed",
+      "OKR completed",
+      "Feishu delivered",
+      "Fleet Registry implemented",
+      "notification_ready snapshot exists",
+      "interactive card works",
+      "archive policy works",
+      "KA-002 active"
+    ],
+    "render_text": "【OKR 面板更新｜PM】\n状态：KA_VERIFIED\nreason_code：NONE\nretry_policy：NONE\nObjective：建立 Hermes turn-finalized 后端事实源，先留下可审计的最小可见闭环。\nKR1：支持增加：provisional lifecycle audit event 已验证。\nKR2：支持增加：notification_ready=false 硬边界已验证。\nKR3：支持增加：session_id/profile/source/title_or_unknown provenance 已验证。\nKR4：保持有效：typed ka_spec sidecar 已通过 Spec Gate。\nActive KA：KA-001：KA_VERIFIED；建议下一轮进入 KA-002 Spec 冻结。\n详情：Reviewer verdict=KA_VERIFIED，source_verdict_contract_id=reviewer_verdict.OKR-20260629-005.KA-001.round-001.d19d37273a92；复跑 11 passed / 0 failed；证据支持 backend turn_finalized_raw provisional JSONL audit event。gap：不覆盖 Feishu delivery / Fleet Registry / notification-ready snapshot / interactive card / archive policy；未跟踪 .omo/ 与 artifacts/ 不作为验收证据。next_action：bridge 推进 READY_FOR_NEXT_KA，PM 下轮选择并冻结下一 KA Spec。需要 zizi 判断：无。不要 claim：human acceptance / production_ready / KR closed / OKR completed / Feishu delivered / notification_ready snapshot。\n下一步状态：READY_FOR_NEXT_KA",
+    "source_verdict_contract_id": "reviewer_verdict.OKR-20260629-005.KA-001.round-001.d19d37273a92"
+  },
+  "producer_role": "bridge",
+  "render_text": "【OKR 面板更新｜PM】\n状态：KA_VERIFIED\nreason_code：NONE\nretry_policy：NONE\nObjective：建立 Hermes turn-finalized 后端事实源，先留下可审计的最小可见闭环。\nKR1：支持增加：provisional lifecycle audit event 已验证。\nKR2：支持增加：notification_ready=false 硬边界已验证。\nKR3：支持增加：session_id/profile/source/title_or_unknown provenance 已验证。\nKR4：保持有效：typed ka_spec sidecar 已通过 Spec Gate。\nActive KA：KA-001：KA_VERIFIED；建议下一轮进入 KA-002 Spec 冻结。\n详情：Reviewer verdict=KA_VERIFIED，source_verdict_contract_id=reviewer_verdict.OKR-20260629-005.KA-001.round-001.d19d37273a92；复跑 11 passed / 0 failed；证据支持 backend turn_finalized_raw provisional JSONL audit event。gap：不覆盖 Feishu delivery / Fleet Registry / notification-ready snapshot / interactive card / archive policy；未跟踪 .omo/ 与 artifacts/ 不作为验收证据。next_action：bridge 推进 READY_FOR_NEXT_KA，PM 下轮选择并冻结下一 KA Spec。需要 zizi 判断：无。不要 claim：human acceptance / production_ready / KR closed / OKR completed / Feishu delivered / notification_ready snapshot。\n下一步状态：READY_FOR_NEXT_KA",
+  "round_id": "round-001",
+  "source_message_id": "om_[REDACTED_MESSAGE_ID]"
+}

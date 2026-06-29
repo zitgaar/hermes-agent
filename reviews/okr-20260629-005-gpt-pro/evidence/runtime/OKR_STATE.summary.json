@@ -1,0 +1,146 @@
+{
+  "active_ka": "KA-001",
+  "current_round_kind": "manual_update",
+  "events_tail": [
+    {
+      "previous_last_pm_final_head": "【OKR 面板卡｜PM】\n状态：BLOCKED\nObjective：未能生成\nKR：未说明\nActive KA：无\n详情：PM profile failed: RuntimeError: TimeoutExpired after 120s; stdout_tail=已收到。\n下一步状态：WAITING_FOR_ZIZI",
+      "previous_status": "active",
+      "reason_code": "PA_DISCUSSION_MANUAL_UPDATE_MISROUTED_TO_PM_NEXT",
+      "source": "rerun_after_pa_resume_fix",
+      "summary": "Previous zizi decision resume was treated as generic pm_next and produced false/effective BLOCKED. Rerunning same Active KA from completed Product Architecture discussion contract.",
+      "ts": 1782745970,
+      "type": "corrective_event"
+    },
+    {
+      "active_ka": "KA-001",
+      "previous_executor_allowed": false,
+      "round_id": "round-001",
+      "sidecar_path": "round-001/contracts/KA-001-ka-spec.json",
+      "spec_audit_verdict": "SPEC_AUDIT_PASS",
+      "ts": 1782746401,
+      "type": "spec_audit_dispatch_baton_released"
+    },
+    {
+      "active_ka": "KA-001",
+      "round_id": "round-001",
+      "source": "update_lifecycle_state",
+      "ts": 1782748806,
+      "type": "bridge_direct_profile_ready_for_review"
+    },
+    {
+      "contract_id": "lifecycle-reviewer_verdict.OKR-20260629-005.KA-001.round-001.d19d37273a92",
+      "contract_type": "lifecycle_event",
+      "contract_version": "okr_typed_contract.v1",
+      "ka_id": "KA-001",
+      "okr_id": "OKR-20260629-005",
+      "payload": {
+        "event_type": "REVIEWER_VERDICT_ACCEPTED",
+        "next_status": "ready_for_next",
+        "prev_status": "ready_for_review",
+        "reason_code": "NONE",
+        "source_contract_id": "reviewer_verdict.OKR-20260629-005.KA-001.round-001.d19d37273a92"
+      },
+      "producer_role": "bridge",
+      "round_id": "round-001"
+    },
+    {
+      "contract_id": "lifecycle-pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a",
+      "contract_type": "lifecycle_event",
+      "contract_version": "okr_typed_contract.v1",
+      "ka_id": "KA-001",
+      "okr_id": "OKR-20260629-005",
+      "payload": {
+        "event_type": "PM_FINAL_ACCEPTED",
+        "next_status": "blocked",
+        "prev_status": "ready_for_next",
+        "reason_code": "BLOCKED",
+        "source_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a"
+      },
+      "producer_role": "bridge",
+      "round_id": "round-001"
+    },
+    {
+      "auto_advance": false,
+      "round": 1,
+      "source": "typed_pm_final",
+      "status": "blocked",
+      "ts": 1782748806,
+      "type": "round_completed",
+      "verdict": "KA_VERIFIED"
+    },
+    {
+      "active_ka": "KA-001",
+      "corrected_status": "ready_for_next",
+      "previous_status": "blocked",
+      "round_id": "round-001",
+      "source_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+      "ts": 1782748983,
+      "type": "pm_final_normalization_correction_applied"
+    },
+    {
+      "contract_id": "lifecycle-pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+      "contract_type": "lifecycle_event",
+      "contract_version": "okr_typed_contract.v1",
+      "ka_id": "KA-001",
+      "okr_id": "OKR-20260629-005",
+      "payload": {
+        "event_type": "PM_FINAL_ACCEPTED",
+        "next_status": "ready_for_next",
+        "prev_status": "blocked",
+        "reason_code": "READY_FOR_NEXT",
+        "source_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983"
+      },
+      "producer_role": "bridge",
+      "round_id": "round-001"
+    },
+    {
+      "source": "maybe_auto_advance",
+      "ts": 1782748992,
+      "type": "auto_advance_claimed_by_pm_bridge"
+    },
+    {
+      "source": "maybe_auto_advance",
+      "ts": 1782749006,
+      "type": "auto_advance_claimed_by_pm_bridge"
+    },
+    {
+      "previous_ka": "KA-001",
+      "status": "completed",
+      "ts": 1782749006,
+      "type": "no_next_ka"
+    },
+    {
+      "backup_dir": "/Users/qitejia/.hermes/artifacts/okr-005-controlled-rerun/repair-state-json/1782749088",
+      "pm_final_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+      "source": "repair_state_json_and_pm_final.py",
+      "ts": 1782749088,
+      "type": "state_json_and_pm_final_sidecar_repaired"
+    }
+  ],
+  "last_lifecycle_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+  "last_pm_final_correction": {
+    "corrected_status": "ready_for_next",
+    "new_pm_final_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+    "old_pm_final_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a",
+    "previous_status": "blocked",
+    "reason_code": "PM_FINAL_NEXT_STATE_NORMALIZATION_BUG",
+    "ts": 1782748983
+  },
+  "last_transition_reason_code": "READY_FOR_NEXT",
+  "last_verdict": "KA_VERIFIED",
+  "non_claims": [
+    "not human acceptance",
+    "not production_ready",
+    "not KR closed",
+    "not Feishu delivery complete",
+    "not full product done"
+  ],
+  "okr_id": "OKR-20260629-005",
+  "processed_contract_ids": [
+    "reviewer_verdict.OKR-20260629-005.KA-001.round-001.d19d37273a92",
+    "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a",
+    "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983"
+  ],
+  "round_index": 1,
+  "status": "completed"
+}

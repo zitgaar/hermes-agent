@@ -1,0 +1,33 @@
+{
+  "active_ka": "KA-001",
+  "active_rework_path": null,
+  "active_spec_path": "specs/KA-001.md",
+  "evidence_path": "round-001/reviews/KA-001-review.md",
+  "forbidden_fields": [
+    "inline_spec",
+    "spec_text",
+    "forked_spec"
+  ],
+  "handoff_path": "round-001/handoffs/KA-001-reviewer-handoff.json",
+  "handoff_writer": "feishu_multi_profile_bots.prepare_active_ka_contract",
+  "ka_spec_contract_path": "round-001/contracts/KA-001-ka-spec.json",
+  "kanban_workflow_path": "round-001/contracts/KA-001-kanban-workflow.json",
+  "no_inline_spec": true,
+  "non_claims": [
+    "human_accepted",
+    "production_ready",
+    "KR closed",
+    "cold-start recovery verified"
+  ],
+  "okr_id": "OKR-20260629-005",
+  "okr_state_path": "OKR_STATE.json",
+  "pipeline_entry": "feishu_multi_profile_bots.run_pipeline_round",
+  "pm_final_contract_path": "round-001/contracts/KA-001-pm-final.json",
+  "profile": "reviewer",
+  "reviewer_contract_path": "round-001/contracts/KA-001-reviewer-verdict.json",
+  "role": "reviewer",
+  "round_id": "round-001",
+  "round_kind": "om_[REDACTED_MESSAGE_ID]",
+  "run_dir": "round-001",
+  "spec_path_source": "OKR_STATE.active_spec_path"
+}

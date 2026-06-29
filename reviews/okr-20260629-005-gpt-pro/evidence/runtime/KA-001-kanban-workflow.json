@@ -1,0 +1,174 @@
+{
+  "active_ka": "KA-001",
+  "active_rework_path": null,
+  "active_spec_path": "specs/KA-001.md",
+  "authority": {
+    "acceptance_gate": "reviewer_verdict typed contract",
+    "business_rules_owner": "bridge",
+    "execution_substrate": "kanban",
+    "human_ui": "OKR Board / Feishu compact cards",
+    "state_writer": "feishu_multi_profile_bots.save_okr_state"
+  },
+  "bridge_owned_stop_rules": [
+    "Spec Gate not SPEC_READY blocks Executor dispatch",
+    "Executor cannot self-verify KA",
+    "Reviewer verdict controls KA verification/rework/blocking",
+    "PM Board update must follow typed Reviewer verdict",
+    "Kanban task completion is not human acceptance, production readiness, or KR closure"
+  ],
+  "non_claims": [
+    "human_accepted",
+    "production_ready",
+    "KR closed"
+  ],
+  "okr_id": "OKR-20260629-005",
+  "round_id": "round-001",
+  "round_kind": "om_[REDACTED_MESSAGE_ID]",
+  "settings": {
+    "board": "",
+    "enabled": true,
+    "mode": "artifact_only",
+    "tenant": ""
+  },
+  "source_message_id": "manual_update",
+  "steps": [
+    {
+      "assignee": "project-manager",
+      "done_condition": "Bridge Spec Gate can evaluate a typed ka_spec sidecar; PM does not update Board from self-belief.",
+      "input_refs": [
+        "OKR_STATE.json",
+        "specs/KA-001.md"
+      ],
+      "output_refs": [
+        "round-001/contracts/KA-001-ka-spec.json"
+      ],
+      "parents": [],
+      "required_output_contract": "ka_spec",
+      "role": "project-manager",
+      "step_key": "pm_spec",
+      "title": "OKR-20260629-005 KA-001 — PM Spec authority"
+    },
+    {
+      "assignee": "product-architecture",
+      "done_condition": "Product Architecture surfaces product value, alternatives, tradeoffs, risks, and any zizi decision need; no execution authority.",
+      "input_refs": [
+        "specs/KA-001.md",
+        "round-001/contracts/KA-001-ka-spec.json"
+      ],
+      "output_refs": [
+        "round-001/cards/product_arch_review.md"
+      ],
+      "parents": [
+        "pm_spec"
+      ],
+      "required_output_contract": "product_arch_review",
+      "role": "product-architecture",
+      "step_key": "product_arch_review",
+      "title": "OKR-20260629-005 KA-001 — Product Architecture deepens Spec before dispatch"
+    },
+    {
+      "assignee": "project-manager",
+      "done_condition": "PM remains Spec owner, incorporates accepted review points, and rewrites/freeze the typed ka_spec sidecar.",
+      "input_refs": [
+        "specs/KA-001.md",
+        "round-001/contracts/KA-001-ka-spec.json"
+      ],
+      "output_refs": [
+        "round-001/contracts/KA-001-ka-spec.json"
+      ],
+      "parents": [
+        "product_arch_review"
+      ],
+      "required_output_contract": "ka_spec",
+      "role": "project-manager",
+      "step_key": "pm_spec_revision",
+      "title": "OKR-20260629-005 KA-001 — PM revises/freeze Spec after architect review"
+    },
+    {
+      "assignee": "reviewer",
+      "done_condition": "Reviewer critiques verifiability and false-success risk only; deterministic Spec Gate still owns executor dispatch.",
+      "input_refs": [
+        "specs/KA-001.md",
+        "round-001/contracts/KA-001-ka-spec.json"
+      ],
+      "output_refs": [
+        "round-001/cards/reviewer_spec_audit.md"
+      ],
+      "parents": [
+        "pm_spec_revision"
+      ],
+      "required_output_contract": "spec_audit",
+      "role": "reviewer",
+      "step_key": "reviewer_spec_audit",
+      "title": "OKR-20260629-005 KA-001 — Reviewer audits Spec testability before dispatch"
+    },
+    {
+      "assignee": "executor",
+      "done_condition": "Executor returns evidence/gaps only; Executor cannot self-verify KA.",
+      "gate": {
+        "name": "spec_gate",
+        "owner": "bridge",
+        "report_path": "",
+        "required_executor_allowed": true,
+        "required_verdict": "SPEC_READY"
+      },
+      "input_refs": [
+        "specs/KA-001.md",
+        "round-001/handoffs/KA-001-executor-handoff.json"
+      ],
+      "output_refs": [
+        "round-001/evidence"
+      ],
+      "parents": [
+        "reviewer_spec_audit"
+      ],
+      "required_output_contract": "executor_result",
+      "role": "executor",
+      "step_key": "executor_run",
+      "title": "OKR-20260629-005 KA-001 — Executor runs gated Spec"
+    },
+    {
+      "allowed_verdicts": [
+        "KA_VERIFIED",
+        "REJECTED",
+        "PARTIAL",
+        "NEEDS_MORE_EVIDENCE",
+        "BLOCKED"
+      ],
+      "assignee": "reviewer",
+      "done_condition": "Reviewer verdict is the acceptance gate; natural-language card text is display-only.",
+      "input_refs": [
+        "round-001/handoffs/KA-001-reviewer-handoff.json"
+      ],
+      "output_refs": [
+        "round-001/contracts/KA-001-reviewer-verdict.json"
+      ],
+      "parents": [
+        "executor_run"
+      ],
+      "required_output_contract": "reviewer_verdict",
+      "role": "reviewer",
+      "step_key": "reviewer_verdict",
+      "title": "OKR-20260629-005 KA-001 — Reviewer verifies Executor evidence"
+    },
+    {
+      "assignee": "project-manager",
+      "done_condition": "PM may update OKR Board only from typed Reviewer verdict and Bridge lifecycle rules.",
+      "input_refs": [
+        "round-001/contracts/KA-001-reviewer-verdict.json"
+      ],
+      "output_refs": [
+        "round-001/contracts/KA-001-pm-final.json"
+      ],
+      "parents": [
+        "reviewer_verdict"
+      ],
+      "required_output_contract": "pm_final",
+      "role": "project-manager",
+      "step_key": "pm_board_update",
+      "title": "OKR-20260629-005 KA-001 — PM updates OKR Board from Reviewer verdict"
+    }
+  ],
+  "workflow_artifact_path": "round-001/contracts/KA-001-kanban-workflow.json",
+  "workflow_type": "okr_kanban_backed_execution.v1"
+}

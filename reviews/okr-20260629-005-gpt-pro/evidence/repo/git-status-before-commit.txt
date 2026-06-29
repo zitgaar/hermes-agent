@@ -1,0 +1,9 @@
+## review/okr-20260629-005-gpt-pro-handoff
+ M agent/turn_finalizer.py
+ M hermes_cli/config.py
+?? .omo/
+?? agent/session_watchtower.py
+?? artifacts/
+?? reviews/
+?? tests/agent/test_session_watchtower.py
+?? tests/agent/test_turn_finalizer_watchtower.py

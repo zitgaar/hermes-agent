@@ -1,0 +1,25 @@
+## git status --short --branch
+## main...origin/main
+ M agent/turn_finalizer.py
+ M hermes_cli/config.py
+?? .omo/
+?? agent/session_watchtower.py
+?? artifacts/
+?? tests/agent/test_session_watchtower.py
+?? tests/agent/test_turn_finalizer_watchtower.py
+
+## allowed status
+ M agent/turn_finalizer.py
+ M hermes_cli/config.py
+?? agent/session_watchtower.py
+?? tests/agent/test_session_watchtower.py
+?? tests/agent/test_turn_finalizer_watchtower.py
+
+## forbidden diff names
+
+## git diff --check allowed
+
+## tracked diff stat
+ agent/turn_finalizer.py | 11 +++++++++++
+ hermes_cli/config.py    |  8 ++++++++
+ 2 files changed, 19 insertions(+)

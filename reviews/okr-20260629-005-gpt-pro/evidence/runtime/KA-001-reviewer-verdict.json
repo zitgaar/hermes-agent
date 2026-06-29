@@ -1,0 +1,111 @@
+{
+  "contract_id": "reviewer_verdict.OKR-20260629-005.KA-001.round-001.d19d37273a92",
+  "contract_type": "reviewer_verdict",
+  "contract_version": "okr_typed_contract.v1",
+  "created_at": "2026-06-29T15:57:28.038717+00:00",
+  "ka_id": "KA-001",
+  "okr_id": "OKR-20260629-005",
+  "payload": {
+    "evidence_checked": [
+      {
+        "kind": "state_readback",
+        "observed": "active_ka=KA-001; active_spec_path=specs/KA-001.md; current_run_dir=round-001; typed reviewer sidecar was missing before this review.",
+        "path": "/Users/qitejia/.hermes/okr_mvp_runtime/demands/OKR-20260629-005/OKR_STATE.json",
+        "ref": "OKR_STATE.active_spec_path"
+      },
+      {
+        "kind": "handoff_readback",
+        "observed": "no_inline_spec=true; spec_path_source=OKR_STATE.active_spec_path; evidence_path=round-001/evidence/KA-001-executor-evidence.md.",
+        "path": "/Users/qitejia/.hermes/okr_mvp_runtime/demands/OKR-20260629-005/round-001/handoffs/KA-001-executor-handoff.json",
+        "ref": "executor_handoff"
+      },
+      {
+        "kind": "handoff_readback",
+        "observed": "reviewer_contract_path=round-001/contracts/KA-001-reviewer-verdict.json; evidence_path=round-001/reviews/KA-001-review.md.",
+        "path": "/Users/qitejia/.hermes/okr_mvp_runtime/demands/OKR-20260629-005/round-001/handoffs/KA-001-reviewer-handoff.json",
+        "ref": "reviewer_handoff"
+      },
+      {
+        "kind": "spec_readback",
+        "observed": "KA target is backend turn_finalized_raw provisional JSONL audit event only; notification_ready=false; no Feishu/registry/product acceptance claims.",
+        "path": "/Users/qitejia/.hermes/okr_mvp_runtime/demands/OKR-20260629-005/specs/KA-001.md",
+        "ref": "active_spec"
+      },
+      {
+        "kind": "typed_spec_contract",
+        "observed": "contract_type=ka_spec; required AS1-AS7 acceptance scenarios cover disabled no-op, completed mapping, provenance, failure/interruption mapping, redaction, fail-open, and finalizer hook.",
+        "path": "/Users/qitejia/.hermes/okr_mvp_runtime/demands/OKR-20260629-005/round-001/contracts/KA-001-ka-spec.json",
+        "ref": "ka_spec_sidecar"
+      },
+      {
+        "kind": "workflow_contract",
+        "observed": "artifact-only workflow assigns Reviewer verdict as acceptance gate; Executor cannot self-verify KA.",
+        "path": "/Users/qitejia/.hermes/okr_mvp_runtime/demands/OKR-20260629-005/round-001/contracts/KA-001-kanban-workflow.json",
+        "ref": "kanban_workflow_sidecar"
+      },
+      {
+        "kind": "executor_evidence",
+        "observed": "evidence separates backend detected, audit written, notification_ready=false, and records non-claims.",
+        "path": "/Users/qitejia/.hermes/okr_mvp_runtime/demands/OKR-20260629-005/round-001/evidence/KA-001-executor-evidence.md",
+        "ref": "executor_evidence_md"
+      },
+      {
+        "kind": "validation_output",
+        "observed": "scripts/run_tests.sh tests/agent/test_session_watchtower.py tests/agent/test_turn_finalizer_watchtower.py => 11 passed, 0 failed.",
+        "path": "/Users/qitejia/.hermes/okr_mvp_runtime/demands/OKR-20260629-005/round-001/evidence/KA-001-validation-output.txt",
+        "ref": "executor_validation_output"
+      },
+      {
+        "kind": "sample_jsonl",
+        "observed": "sample contains event_stage=turn_finalized_raw, provisional=true, notification_ready=false, session_id/profile/source/title_or_unknown, checkout_needed, requires_human=true, and redacted metadata.",
+        "path": "/Users/qitejia/.hermes/okr_mvp_runtime/demands/OKR-20260629-005/round-001/evidence/KA-001-sample-event.jsonl",
+        "ref": "sample_event"
+      },
+      {
+        "kind": "repo_inspection",
+        "observed": "Inspected agent/session_watchtower.py, agent/turn_finalizer.py hook, hermes_cli/config.py defaults, and new tests; forbidden tracked diff names empty; git diff --check allowed files clean.",
+        "path": "/Users/qitejia/.hermes/hermes-agent",
+        "ref": "code_and_diff"
+      },
+      {
+        "kind": "reviewer_rerun",
+        "observed": "Reviewer reran scripts/run_tests.sh tests/agent/test_session_watchtower.py tests/agent/test_turn_finalizer_watchtower.py => 11 passed, 0 failed.",
+        "path": "/Users/qitejia/.hermes/hermes-agent",
+        "ref": "targeted_tests"
+      },
+      {
+        "kind": "reviewer_redaction_probe",
+        "observed": "A real sk-test-* token in final_response and authorization metadata was absent from serialized event; excerpt became API_TOKEN=*** and authorization/password metadata became [REDACTED].",
+        "path": "agent/session_watchtower.py",
+        "ref": "manual_probe"
+      }
+    ],
+    "gaps": [],
+    "kr_support": "KR_SUPPORT_INCREASED",
+    "non_claims": [
+      "human_accepted",
+      "production_ready",
+      "KR closed",
+      "Feishu delivered",
+      "Fleet Registry implemented",
+      "notification_ready snapshot exists",
+      "interactive card works",
+      "archive policy works"
+    ],
+    "reason_code": "NONE",
+    "required_rework": [],
+    "retry_policy": "NONE",
+    "review_artifact_path": "round-001/reviews/KA-001-review.md",
+    "reviewer_notes": "Untracked .omo/ and artifacts/ directories are present in repo status but were not used as KA acceptance evidence; tracked forbidden diff names were empty and inspected KA implementation is confined to allowed product/test files.",
+    "summary": "KA-001 范围内的后端 turn_finalized_raw provisional JSONL 审计事件已由代码、样例 JSONL、目标测试和 Reviewer 复跑共同支持；不包含 Feishu/Fleet Registry/notification-ready/product acceptance 声明。",
+    "supported_krs_observed": [
+      "KR1: provisional lifecycle audit event bounded to turn_finalized_raw",
+      "KR2: notification_ready=false hard boundary present in sample and code",
+      "KR3: session_id/profile/source/title_or_unknown present or explicit unknown"
+    ],
+    "verdict": "KA_VERIFIED"
+  },
+  "producer_role": "reviewer",
+  "round_id": "round-001",
+  "source_message_id": "om_[REDACTED_MESSAGE_ID]"
+}

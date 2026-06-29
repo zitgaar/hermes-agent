@@ -426,6 +426,17 @@ def finalize_turn(
     if interrupted and agent._interrupt_message:
         result["interrupt_message"] = agent._interrupt_message
 
+    try:
+        from agent.session_watchtower import emit_turn_finalized_event
+        emit_turn_finalized_event(
+            result=result,
+            task_id=effective_task_id,
+            turn_id=turn_id,
+            agent=agent,
+        )
+    except Exception as exc:
+        logger.warning("watchtower turn-finalized hook failed: %s", exc)
+
     # Clear interrupt state after handling
     agent.clear_interrupt()
 

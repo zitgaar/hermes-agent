@@ -1289,6 +1289,14 @@ DEFAULT_CONFIG = {
         "max_line_length": 2000,
     },
 
+    "watchtower": {
+        "enabled": False,
+        "audit_log": True,
+        "event_log_path": "watchtower/session_events.jsonl",
+        "max_excerpt_chars": 500,
+        "redact": True,
+    },
+
     # Tool loop guardrails nudge models when they repeat failed or
     # non-progressing tool calls. Soft warnings are always-on by default;
     # hard stops are opt-in so interactive CLI/TUI sessions keep flowing.

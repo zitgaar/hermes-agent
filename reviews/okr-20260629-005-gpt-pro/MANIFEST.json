@@ -1,0 +1,306 @@
+{
+  "bundle_entrypoints": [
+    "reviews/okr-20260629-005-gpt-pro/GPT_PRO_REVIEW_REQUEST.md",
+    "reviews/okr-20260629-005-gpt-pro/HANDOFF.md",
+    "reviews/okr-20260629-005-gpt-pro/KNOWN_ISSUES_AND_OPTIMIZATION_REQUESTS.md",
+    "reviews/okr-20260629-005-gpt-pro/MANIFEST.json"
+  ],
+  "bundle_purpose": "GPT Pro independent acceptance/review request for Hermes OKR Room flow OKR-20260629-005",
+  "canonical_runtime_state": {
+    "active_ka": "KA-001",
+    "current_round_kind": "manual_update",
+    "events_tail": [
+      {
+        "previous_last_pm_final_head": "【OKR 面板卡｜PM】\n状态：BLOCKED\nObjective：未能生成\nKR：未说明\nActive KA：无\n详情：PM profile failed: RuntimeError: TimeoutExpired after 120s; stdout_tail=已收到。\n下一步状态：WAITING_FOR_ZIZI",
+        "previous_status": "active",
+        "reason_code": "PA_DISCUSSION_MANUAL_UPDATE_MISROUTED_TO_PM_NEXT",
+        "source": "rerun_after_pa_resume_fix",
+        "summary": "Previous zizi decision resume was treated as generic pm_next and produced false/effective BLOCKED. Rerunning same Active KA from completed Product Architecture discussion contract.",
+        "ts": 1782745970,
+        "type": "corrective_event"
+      },
+      {
+        "active_ka": "KA-001",
+        "previous_executor_allowed": false,
+        "round_id": "round-001",
+        "sidecar_path": "round-001/contracts/KA-001-ka-spec.json",
+        "spec_audit_verdict": "SPEC_AUDIT_PASS",
+        "ts": 1782746401,
+        "type": "spec_audit_dispatch_baton_released"
+      },
+      {
+        "active_ka": "KA-001",
+        "round_id": "round-001",
+        "source": "update_lifecycle_state",
+        "ts": 1782748806,
+        "type": "bridge_direct_profile_ready_for_review"
+      },
+      {
+        "contract_id": "lifecycle-reviewer_verdict.OKR-20260629-005.KA-001.round-001.d19d37273a92",
+        "contract_type": "lifecycle_event",
+        "contract_version": "okr_typed_contract.v1",
+        "ka_id": "KA-001",
+        "okr_id": "OKR-20260629-005",
+        "payload": {
+          "event_type": "REVIEWER_VERDICT_ACCEPTED",
+          "next_status": "ready_for_next",
+          "prev_status": "ready_for_review",
+          "reason_code": "NONE",
+          "source_contract_id": "reviewer_verdict.OKR-20260629-005.KA-001.round-001.d19d37273a92"
+        },
+        "producer_role": "bridge",
+        "round_id": "round-001"
+      },
+      {
+        "contract_id": "lifecycle-pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a",
+        "contract_type": "lifecycle_event",
+        "contract_version": "okr_typed_contract.v1",
+        "ka_id": "KA-001",
+        "okr_id": "OKR-20260629-005",
+        "payload": {
+          "event_type": "PM_FINAL_ACCEPTED",
+          "next_status": "blocked",
+          "prev_status": "ready_for_next",
+          "reason_code": "BLOCKED",
+          "source_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a"
+        },
+        "producer_role": "bridge",
+        "round_id": "round-001"
+      },
+      {
+        "auto_advance": false,
+        "round": 1,
+        "source": "typed_pm_final",
+        "status": "blocked",
+        "ts": 1782748806,
+        "type": "round_completed",
+        "verdict": "KA_VERIFIED"
+      },
+      {
+        "active_ka": "KA-001",
+        "corrected_status": "ready_for_next",
+        "previous_status": "blocked",
+        "round_id": "round-001",
+        "source_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+        "ts": 1782748983,
+        "type": "pm_final_normalization_correction_applied"
+      },
+      {
+        "contract_id": "lifecycle-pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+        "contract_type": "lifecycle_event",
+        "contract_version": "okr_typed_contract.v1",
+        "ka_id": "KA-001",
+        "okr_id": "OKR-20260629-005",
+        "payload": {
+          "event_type": "PM_FINAL_ACCEPTED",
+          "next_status": "ready_for_next",
+          "prev_status": "blocked",
+          "reason_code": "READY_FOR_NEXT",
+          "source_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983"
+        },
+        "producer_role": "bridge",
+        "round_id": "round-001"
+      },
+      {
+        "source": "maybe_auto_advance",
+        "ts": 1782748992,
+        "type": "auto_advance_claimed_by_pm_bridge"
+      },
+      {
+        "source": "maybe_auto_advance",
+        "ts": 1782749006,
+        "type": "auto_advance_claimed_by_pm_bridge"
+      },
+      {
+        "previous_ka": "KA-001",
+        "status": "completed",
+        "ts": 1782749006,
+        "type": "no_next_ka"
+      },
+      {
+        "backup_dir": "/Users/qitejia/.hermes/artifacts/okr-005-controlled-rerun/repair-state-json/1782749088",
+        "pm_final_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+        "source": "repair_state_json_and_pm_final.py",
+        "ts": 1782749088,
+        "type": "state_json_and_pm_final_sidecar_repaired"
+      }
+    ],
+    "last_lifecycle_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+    "last_pm_final_correction": {
+      "corrected_status": "ready_for_next",
+      "new_pm_final_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983",
+      "old_pm_final_contract_id": "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a",
+      "previous_status": "blocked",
+      "reason_code": "PM_FINAL_NEXT_STATE_NORMALIZATION_BUG",
+      "ts": 1782748983
+    },
+    "last_transition_reason_code": "READY_FOR_NEXT",
+    "last_verdict": "KA_VERIFIED",
+    "non_claims": [
+      "not human acceptance",
+      "not production_ready",
+      "not KR closed",
+      "not Feishu delivery complete",
+      "not full product done"
+    ],
+    "okr_id": "OKR-20260629-005",
+    "processed_contract_ids": [
+      "reviewer_verdict.OKR-20260629-005.KA-001.round-001.d19d37273a92",
+      "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a",
+      "pm_final.OKR-20260629-005.KA-001.round-001.475cab83d31a.corrected-1782748983"
+    ],
+    "round_index": 1,
+    "status": "completed"
+  },
+  "delivery_branch": "review/okr-20260629-005-gpt-pro-handoff",
+  "delivery_note": "Final head commit is verified after commit/push and reported in the zizi-facing handoff; this manifest itself is part of that commit.",
+  "delivery_remote": "git@github.com:zitgaar/hermes-agent.git",
+  "delivery_repo": "zitgaar/hermes-agent",
+  "file_inventory": [
+    {
+      "bytes": 2968,
+      "path": "reviews/okr-20260629-005-gpt-pro/GPT_PRO_REVIEW_REQUEST.md",
+      "sha256": "550a527507f47aed369ee52b896ff61d9b5ca8eabf17cf2ff5e17a1528c8be3a"
+    },
+    {
+      "bytes": 3077,
+      "path": "reviews/okr-20260629-005-gpt-pro/HANDOFF.md",
+      "sha256": "970aaeb1168cab46095a4759d831eaf3e8f790c8a3e5e0f5c1b02dca81ff2369"
+    },
+    {
+      "bytes": 2026,
+      "path": "reviews/okr-20260629-005-gpt-pro/KNOWN_ISSUES_AND_OPTIMIZATION_REQUESTS.md",
+      "sha256": "19df5efd41fa8fed35dd7b4550c1ee342846b801f4c887518dafaab9bc2d65f7"
+    },
+    {
+      "bytes": 12854,
+      "path": "reviews/okr-20260629-005-gpt-pro/MANIFEST.json",
+      "sha256": "9d18bcbc39065785cb0a1e5b430abbb1c330a99ba2d0c4f2b6dcc3d5a6a7c624"
+    },
+    {
+      "bytes": 1265,
+      "path": "reviews/okr-20260629-005-gpt-pro/README.md",
+      "sha256": "5693a34af8d0b9c7de54b21e98c31002b3ed57b4cd8246b399dee286d4d1e2f2"
+    },
+    {
+      "bytes": 115,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/repo/diff-stat-before-commit.txt",
+      "sha256": "b1413fdd6a409ce9f8a435f0797c0547fcdd42d0d6acfb5f8202d1e007a44cd3"
+    },
+    {
+      "bytes": 251,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/repo/git-status-before-commit.txt",
+      "sha256": "7766058343b19d4c9d5a05d10af580e98ca41c16efc1e7c31553e244d218ab92"
+    },
+    {
+      "bytes": 1169,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/repo/local-validation-output.txt",
+      "sha256": "1c3718108e7835fe7ca52c55cc3da75917fe93d8f8a562047ebb8c22a41564d3"
+    },
+    {
+      "bytes": 1401,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/repo/tracked-diff-before-commit.patch",
+      "sha256": "c717df04083fa7873568c4d392c6648fde6339c0a9b39a845cbc5be3a9e69d87"
+    },
+    {
+      "bytes": 6304,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-executor-evidence.md",
+      "sha256": "ad3fa31969fc1ca0f1c7f84ce815a054caa2e4242b36d2e0b0b723912c10f757"
+    },
+    {
+      "bytes": 1175,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-executor-handoff.json",
+      "sha256": "245ed00141db541220f48aee572653dae0f2047dfe3d56c80e1fef90d05437d6"
+    },
+    {
+      "bytes": 633,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-git-proof.txt",
+      "sha256": "d76286617bc64df8d2963bfd1a1e9e231af3922718adb46462426cb8eafb1db4"
+    },
+    {
+      "bytes": 24283,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-ka-spec.json",
+      "sha256": "425595dc4e3c110822b666d92bca32ab898c66ca879aeeace67bca8b0356e1f1"
+    },
+    {
+      "bytes": 5757,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-kanban-workflow.json",
+      "sha256": "d0f0ca62e379855e7bb3d7931b37ebbcec8631942d897c2417f3d475ddb6046d"
+    },
+    {
+      "bytes": 5796,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-pm-final.json",
+      "sha256": "b4eeba10627de33097f80db6c48f8f3be3ba133e6ed091e49d3883857fff4ce6"
+    },
+    {
+      "bytes": 3278,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-product-arch-discussion.json",
+      "sha256": "dd1e76d2b6ec83b8081116060c7b121a70f969ff903f830ffea255f0c39586d1"
+    },
+    {
+      "bytes": 5007,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-review.md",
+      "sha256": "9743277426100aded9eb4a3eda69fb4337fb50b6356b51b5b5798df5a75f7c7b"
+    },
+    {
+      "bytes": 1163,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-reviewer-handoff.json",
+      "sha256": "073fbfdaee3a39068084ef9bc2c7c28baa8358a272b37875a89c6b209bd988f5"
+    },
+    {
+      "bytes": 6083,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-reviewer-verdict.json",
+      "sha256": "fa21aa128ccea6a2dc2fc522f2ad5409a17eaca1484074cda4295a069074c1fc"
+    },
+    {
+      "bytes": 1240,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-sample-event.jsonl",
+      "sha256": "8c394635c47424d749ad0c6a3595dff2e0d7dc6c432b1be3160355692d247f8b"
+    },
+    {
+      "bytes": 28845,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-spec-gate-report.json",
+      "sha256": "11cf79734fe2fadfdfb92115bf61d9c85eb7fd0c3a95ec8f6d6958d5a768f45b"
+    },
+    {
+      "bytes": 969,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/KA-001-validation-output.txt",
+      "sha256": "4f4dad4d4930a77fdba6e31d183df52df4cafcb3bf70ce9b170ae45535452457"
+    },
+    {
+      "bytes": 5507,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/OKR_STATE.summary.json",
+      "sha256": "eab5a2af32cd2fb67b33458556e934080b7fbf9470a5a5afc3d4ae6ac83ead32"
+    },
+    {
+      "bytes": 1007,
+      "path": "reviews/okr-20260629-005-gpt-pro/evidence/runtime/reviewer_spec_audit.md",
+      "sha256": "b0c8c6e34cd9976fef87f9b4602385d4be7706ed9b0e0ae142bb77e391d68aa7"
+    },
+    {
+      "bytes": 1637,
+      "path": "reviews/okr-20260629-005-gpt-pro/scripts/validate_bundle.py",
+      "sha256": "a463203b63604eafb10b9adc9528b5d5b3e8193c4387e848002ad9c49c59c60f"
+    }
+  ],
+  "generated_at_utc": "2026-06-29T16:22:02Z",
+  "local_validation_output": "reviews/okr-20260629-005-gpt-pro/evidence/repo/local-validation-output.txt",
+  "okr_id": "OKR-20260629-005",
+  "redaction_note": "Feishu chat/message/open IDs and credential-like strings are redacted in review bundle snapshots. Source code paths are not redacted unless they contain evidence text.",
+  "review_questions": [
+    "Does the OKR Room workflow provide meaningful governance, or is it mostly artifact ceremony?",
+    "Did Product Architecture / PA discussion materially improve Spec quality and reduce false-success risk?",
+    "Did Executor actually use multi-agent execution, or only a single Hermes executor profile inside a multi-profile process?",
+    "Are the current state transitions / typed sidecars / Kanban contracts sufficient for trustworthy lifecycle closure?",
+    "What concrete next hardening steps should be prioritized before using this pattern on higher-stakes OKRs?"
+  ],
+  "source_code_paths_to_review": [
+    "agent/session_watchtower.py",
+    "agent/turn_finalizer.py",
+    "hermes_cli/config.py",
+    "tests/agent/test_session_watchtower.py",
+    "tests/agent/test_turn_finalizer_watchtower.py"
+  ],
+  "source_head_before_bundle_commit": "dc5ef20d89f0fc787a97ebd05bb8c41fbce10ab7",
+  "source_repo": "/Users/qitejia/.hermes/hermes-agent"
+}

@@ -1,0 +1,45 @@
+{
+  "contract_id": "OKR-20260629-005-KA-001-round-001-product-arch-discussion-21d36273522d",
+  "contract_type": "product_arch_discussion",
+  "contract_version": "okr_typed_contract.v1",
+  "ka_id": "KA-001",
+  "okr_id": "OKR-20260629-005",
+  "payload": {
+    "current_question_id": null,
+    "decision_log": [
+      {
+        "decision": "第一阶段必须留下最小可见产品闭环。",
+        "question_id": "Q1",
+        "source_message_id": "om_[REDACTED_MESSAGE_ID]",
+        "user_answer": "第一阶段必须留下最小可见产品闭环。"
+      }
+    ],
+    "escalation_reasons": [
+      "explicit_product_architecture_waiting_for_zizi",
+      "original_visible_value_scope_shrunk_or_delayed",
+      "technical_skeleton_risk_for_user_visible_goal"
+    ],
+    "executor_release_allowed": true,
+    "external_research_refs": [],
+    "mention_message_id": "om_[REDACTED_MESSAGE_ID]",
+    "mention_required": true,
+    "mention_sent": true,
+    "questions": [
+      {
+        "id": "Q1",
+        "question": "这轮要先保留一个最小用户可见闭环，还是接受先做纯 backend/本地证据、把飞书人话体验推迟？",
+        "recommended_answer": "优先保留最小用户可见闭环，不要把原始价值降级成纯 backend 骨架。",
+        "status": "answered",
+        "user_answer": "第一阶段必须留下最小可见产品闭环。",
+        "why": "如果本轮把飞书/人话/可见体验推迟，技术上可能可验收，但 zizi 感受到的产品价值会消失。"
+      }
+    ],
+    "source_review_excerpt": "【Spec 深度审查｜Product Architecture】 结论：NEEDS_PM_REVISION 产品目标：先做可信的后端 turn-finalized 事实源，为后续 fleet snapshot 和飞书接力通知打地基。 关键取舍：推荐 finalizer-first 的窄切片，替代方案是直接接 TUI/CLI/Feishu hooks，但后者更容易误报和扩大范围。 风险/盲区：当前 Spec 容易把 KA-001 的 `checkout_needed` 写成“最终产品状态”，而它其实只是 pre-debounce / pre-registry 的阶段性判断。 建议 PM 修改：补充“KA-001 事件为 provisional lifecycle audit event，不等于 notification-ready snapshot”，并把 session identity/provenance 作为必验字段。 是否需要 zizi 判断：无 详情： 1. 建议在 schema/验收里加字段或约束：`event_stage=turn_finalized_raw/provisional`、`notification_ready=false` 或等价语义，避免后续 KA 把本轮 JSONL 直接当成最终 Watchtower 状态。 2. 建议验收明确：`session_id/profile/source/title_or_unknown` 必须稳定产出或显式 unknown，不允许猜；否则 KA-002 的 Fleet Registry 无法可靠聚合同一 session。 3. 当前范围切得对：不碰 Feishu、不做 registry、不做 debounce/buttons/archive；但 evidence 必须继续区分 backend detected / audit written，不得暗示 Watchtower 通知能力已完成。 non_claims：no executor dispatch / no Spec Gate pass / no KA verified",
+    "status": "DISCUSSION_COMPLETE",
+    "tradeoffs": [
+      "关键取舍：推荐 finalizer-first 的窄切片，替代方案是直接接 TUI/CLI/Feishu hooks，但后者更容易误报和扩大范围。"
+    ]
+  },
+  "producer_role": "product-architecture",
+  "round_id": "round-001"
+}
