@@ -9733,9 +9733,17 @@ async def get_session_messages(
         if not sid:
             raise HTTPException(status_code=404, detail="Session not found")
         sid = db.resolve_resume_session_id(sid)
-        # Clamp limit to prevent abuse (max 500 per page)
+        # Match ``session.resume`` display hydration: a compressed conversation is
+        # one logical thread whose visible transcript spans root → tip. Returning
+        # only the tip rows lets REST prefetch/fallback overwrite a complete
+        # gateway resume payload with a truncated transcript.
+        messages = db.get_messages_as_conversation(sid, include_ancestors=True)
+        # Preserve the endpoint's pagination contract over the assembled logical
+        # conversation rather than paging only the compression tip.
         _limit = min(limit, 500) if limit is not None else None
-        messages = db.get_messages(sid, limit=_limit, offset=offset)
+        if offset or _limit is not None:
+            stop = None if _limit is None else offset + _limit
+            messages = messages[offset:stop]
         return {
             "session_id": sid,
             "messages": messages,
