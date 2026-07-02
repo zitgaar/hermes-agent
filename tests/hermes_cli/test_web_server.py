@@ -1144,6 +1144,51 @@ class TestWebServerEndpoints:
         full_rows = [s for s in full.json()["sessions"] if s["id"] == "lean-profiles-row"]
         assert full_rows and full_rows[0]["system_prompt"].startswith("# SOUL.md")
 
+    def test_get_sessions_hides_internal_worker_sources_by_default(self):
+        """Desktop recents should not be crowded by generated worker sessions."""
+        from hermes_state import SessionDB
+
+        db = SessionDB()
+        try:
+            db.create_session(session_id="real-recents", source="cli")
+            db.append_message(
+                session_id="real-recents", role="user", content="real user chat"
+            )
+            db.create_session(
+                session_id="ma-noise",
+                source="ma_protocol_search_003_taxonomy_redteam",
+            )
+            db.append_message(
+                session_id="ma-noise",
+                role="user",
+                content="# MA-PROTOCOL-SEARCH worker",
+            )
+            db.create_session(session_id="bench-noise", source="ma_bench_003b")
+            db.append_message(
+                session_id="bench-noise",
+                role="user",
+                content="# MA-BENCH worker",
+            )
+        finally:
+            db.close()
+
+        resp = self.client.get(
+            "/api/sessions?limit=20&offset=0&min_messages=0&order=recent"
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        ids = {s["id"] for s in data["sessions"]}
+        assert "real-recents" in ids
+        assert "ma-noise" not in ids
+        assert "bench-noise" not in ids
+        assert data["total"] == 1
+
+        explicit = self.client.get(
+            "/api/sessions?source=ma_protocol_search_003_taxonomy_redteam"
+        )
+        assert explicit.status_code == 200
+        assert {s["id"] for s in explicit.json()["sessions"]} == {"ma-noise"}
+
     def test_rename_session_updates_title(self):
         """PATCH /api/sessions/{id} renames a session (regression: the route
         was missing entirely, so the desktop rename dialog got a 405)."""

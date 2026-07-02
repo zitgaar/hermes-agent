@@ -3941,6 +3941,45 @@ def _strip_session_list_rows(sessions: List[Dict[str, Any]]) -> List[Dict[str, A
     return sessions
 
 
+_INTERNAL_SESSION_SOURCE_EXACT = (
+    "tool",
+    "control_surface_cli_delegate",
+    "deep-skill-smoke",
+    "deep_skill_smoke",
+)
+_INTERNAL_SESSION_SOURCE_PREFIXES = (
+    "ma_protocol_search_",
+    "ma_bench_",
+    "ma-bench-",
+    "control_surface_",
+)
+
+
+def _split_source_csv(value: Optional[str]) -> List[str]:
+    return [s.strip() for s in (value or "").split(",") if s.strip()]
+
+
+def _session_list_source_filters(
+    *, source_filter: Optional[str], exclude_sources: Optional[str]
+) -> Tuple[List[str], Optional[List[str]]]:
+    """Return exact/prefix source exclusions for user-facing session lists.
+
+    Generated benchmark / multi-agent worker rows stay in state.db for audit and
+    search, but they are not resumable user conversations and should not crowd
+    the Desktop sidebar or resume picker. Explicit ``source=...`` queries remain
+    literal/debuggable.
+    """
+
+    exact = list(dict.fromkeys(_split_source_csv(exclude_sources)))
+    if source_filter:
+        return exact, None
+
+    for src in _INTERNAL_SESSION_SOURCE_EXACT:
+        if src not in exact:
+            exact.append(src)
+    return exact, list(_INTERNAL_SESSION_SOURCE_PREFIXES)
+
+
 @app.get("/api/sessions")
 def get_sessions(
     limit: int = 20,
@@ -3992,10 +4031,15 @@ def get_sessions(
             # ``exclude_sources`` (comma-separated) drops classes. The desktop
             # uses these to split recents (exclude=cron) from the cron-jobs
             # section (source=cron) into two independent lists.
-            exclude_list = [s for s in (exclude_sources or "").split(",") if s.strip()]
+            source_filter = source or None
+            exclude_list, exclude_prefixes = _session_list_source_filters(
+                source_filter=source_filter,
+                exclude_sources=exclude_sources,
+            )
             sessions = db.list_sessions_rich(
-                source=source or None,
+                source=source_filter,
                 exclude_sources=exclude_list or None,
+                exclude_source_prefixes=exclude_prefixes,
                 cwd_prefix=(cwd_prefix or None),
                 limit=limit,
                 offset=offset,
@@ -4009,9 +4053,10 @@ def get_sessions(
                 compact_rows=not full,
             )
             total = db.session_count(
-                source=source or None,
+                source=source_filter,
                 cwd_prefix=(cwd_prefix or None),
                 exclude_sources=exclude_list or None,
+                exclude_source_prefixes=exclude_prefixes,
                 min_message_count=min_message_count,
                 include_archived=include_archived,
                 archived_only=archived_only,
@@ -4093,7 +4138,10 @@ def get_profiles_sessions(
     # the cron-jobs section passes source=cron — two independent lists so
     # newest cron sessions can't starve the recents page.
     source_filter = source or None
-    exclude_list = [s for s in (exclude_sources or "").split(",") if s.strip()]
+    exclude_list, exclude_prefixes = _session_list_source_filters(
+        source_filter=source_filter,
+        exclude_sources=exclude_sources,
+    )
     # Over-fetch per profile so the merged+sorted window is correct for the
     # requested page. Capped so a huge profile can't blow up the response.
     per_profile = min(max(limit + offset, limit), 500)
@@ -4119,6 +4167,7 @@ def get_profiles_sessions(
             rows = db.list_sessions_rich(
                 source=source_filter,
                 exclude_sources=exclude_list or None,
+                exclude_source_prefixes=exclude_prefixes,
                 limit=per_profile,
                 offset=0,
                 min_message_count=min_message_count,
@@ -4131,6 +4180,7 @@ def get_profiles_sessions(
             profile_total = db.session_count(
                 source=source_filter,
                 exclude_sources=exclude_list or None,
+                exclude_source_prefixes=exclude_prefixes,
                 min_message_count=min_message_count,
                 include_archived=include_archived,
                 archived_only=archived_only,
