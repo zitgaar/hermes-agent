@@ -5303,6 +5303,23 @@ def _(rid, params: dict) -> dict:
         },
     )
 
+_USER_SESSION_DENY_SOURCES = frozenset(
+    {"tool", "control_surface_cli_delegate", "deep-skill-smoke", "deep_skill_smoke"}
+)
+_USER_SESSION_DENY_SOURCE_PREFIXES = (
+    "ma_protocol_search_",
+    "ma_bench_",
+    "ma-bench-",
+    "control_surface_",
+)
+
+
+def _is_denied_user_session_source(source: object) -> bool:
+    src = str(source or "").strip().lower()
+    return src in _USER_SESSION_DENY_SOURCES or any(
+        src.startswith(prefix) for prefix in _USER_SESSION_DENY_SOURCE_PREFIXES
+    )
+
 
 @method("session.list")
 def _(rid, params: dict) -> dict:
@@ -5315,10 +5332,10 @@ def _(rid, params: dict) -> dict:
         # ones not enumerated here), ACP adapter clients, webhook sessions,
         # custom `HERMES_SESSION_SOURCE` values, and older installs with
         # different source labels. We deny-list only the noisy internal
-        # sources (``tool`` sub-agent runs) rather than allow-listing a
-        # fixed set of platform names that goes stale whenever a new
-        # platform is added or a user names their own source.
-        deny = frozenset({"tool"})
+        # sources (``tool`` sub-agent runs and generated benchmark / MA worker
+        # rows) rather than allow-listing a fixed set of platform names that
+        # goes stale whenever a new platform is added or a user names their own
+        # source.
 
         limit = int(params.get("limit", 200) or 200)
         # Over-fetch modestly so per-source filtering doesn't leave us
@@ -5327,8 +5344,13 @@ def _(rid, params: dict) -> dict:
         fetch_limit = max(limit * 2, 200)
         rows = [
             s
-            for s in db.list_sessions_rich(source=None, limit=fetch_limit, order_by_last_active=True, compact_rows=True)
-            if (s.get("source") or "").strip().lower() not in deny
+            for s in db.list_sessions_rich(
+                source=None,
+                limit=fetch_limit,
+                order_by_last_active=True,
+                compact_rows=True,
+            )
+            if not _is_denied_user_session_source(s.get("source"))
         ][:limit]
         return _ok(
             rid,
@@ -5354,8 +5376,8 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Return the most recent human-facing session id, or ``None``.
 
-    Mirrors ``session.list``'s deny-list behaviour (drops ``tool``
-    sub-agent rows).  Used by TUI auto-resume when
+    Mirrors ``session.list``'s deny-list behaviour (drops ``tool`` sub-agent
+    rows and generated benchmark / MA worker rows).  Used by TUI auto-resume when
     ``display.tui_auto_resume_recent`` is on; the field is also handy
     for any CLI tooling that wants "latest session" without paginating
     the full list.
@@ -5369,15 +5391,13 @@ def _(rid, params: dict) -> dict:
     if db is None:
         return _ok(rid, {"session_id": None})
     try:
-        deny = frozenset({"tool"})
         # Over-fetch by a generous bounded amount so heavy sub-agent
-        # users (lots of recent ``tool`` rows) don't get a false
+        # users (lots of recent internal rows) don't get a false
         # "no eligible session" answer.  ``session.list`` uses a
         # similar over-fetch strategy.
         rows = db.list_sessions_rich(source=None, limit=200, order_by_last_active=True, compact_rows=True)
         for row in rows:
-            src = (row.get("source") or "").strip().lower()
-            if src in deny:
+            if _is_denied_user_session_source(row.get("source")):
                 continue
             return _ok(
                 rid,

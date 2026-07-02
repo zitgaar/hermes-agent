@@ -3000,6 +3000,7 @@ class SessionDB:
         self,
         source: str = None,
         exclude_sources: List[str] = None,
+        exclude_source_prefixes: Optional[List[str]] = None,
         cwd_prefix: str = None,
         limit: int = 20,
         offset: int = 0,
@@ -3080,6 +3081,10 @@ class SessionDB:
             placeholders = ",".join("?" for _ in exclude_sources)
             where_clauses.append(f"s.source NOT IN ({placeholders})")
             params.extend(exclude_sources)
+        if exclude_source_prefixes:
+            for prefix in exclude_source_prefixes:
+                where_clauses.append("COALESCE(s.source, '') NOT GLOB ?")
+                params.append(f"{prefix}*")
         if cwd_prefix:
             clause, clause_params = _cwd_prefix_clause(cwd_prefix)
             where_clauses.append(clause)
@@ -4932,6 +4937,7 @@ class SessionDB:
         archived_only: bool = False,
         exclude_children: bool = False,
         exclude_sources: List[str] = None,
+        exclude_source_prefixes: Optional[List[str]] = None,
     ) -> int:
         """Count sessions, optionally filtered by source.
 
@@ -4963,6 +4969,10 @@ class SessionDB:
             placeholders = ",".join("?" for _ in exclude_sources)
             where_clauses.append(f"s.source NOT IN ({placeholders})")
             params.extend(exclude_sources)
+        if exclude_source_prefixes:
+            for prefix in exclude_source_prefixes:
+                where_clauses.append("COALESCE(s.source, '') NOT GLOB ?")
+                params.append(f"{prefix}*")
         if cwd_prefix:
             clause, clause_params = _cwd_prefix_clause(cwd_prefix)
             where_clauses.append(clause)
