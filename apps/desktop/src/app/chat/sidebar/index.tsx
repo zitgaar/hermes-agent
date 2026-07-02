@@ -121,6 +121,7 @@ import {
 } from './projects'
 import { SidebarBlankState, SidebarPinnedEmptyState, SidebarSessionSkeletons } from './section-states'
 import { SidebarSessionsSection, VIRTUALIZE_THRESHOLD } from './sessions-section'
+import { sortAgentSessionsByRecency } from './session-sort'
 
 // Non-session groups (messaging platforms) stay compact: show a few rows up
 // front, reveal more in larger steps on demand. Keeps a busy platform from
@@ -331,13 +332,11 @@ export function ChatSidebar({
     [sessions, showAllProfiles, profileScope]
   )
 
-  // Agent session order is pinned to creation time (started_at), NOT activity —
-  // a new message must never float a session to the top. Position only changes
-  // for a brand-new session or an explicit manual drag (agentOrderIds).
-  const sortedSessions = useMemo(
-    () => [...visibleSessions].sort((a, b) => (b.started_at || 0) - (a.started_at || 0)),
-    [visibleSessions]
-  )
+  // Agent session order follows actual activity, not original creation time: a
+  // compressed/continued long-running thread may keep its old started_at while
+  // last_active moves forward. Sorting by started_at makes that live thread look
+  // "lost" at the bottom of Recents.
+  const sortedSessions = useMemo(() => sortAgentSessionsByRecency(visibleSessions), [visibleSessions])
 
   const workingSessionIdSet = useMemo(() => new Set(workingSessionIds), [workingSessionIds])
 
