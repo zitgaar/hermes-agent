@@ -5885,6 +5885,27 @@ def test_session_list_returns_clean_error_when_state_db_is_unavailable(monkeypat
     assert "state.db unavailable: locking protocol" in resp["error"]["message"]
 
 
+def test_session_list_hides_internal_worker_sources(monkeypatch):
+    class _DB:
+        def list_sessions_rich(self, *, source=None, limit=200, order_by_last_active=False):
+            return [
+                {"id": "tool-1", "source": "tool", "title": "noise", "started_at": 104},
+                {"id": "ma-1", "source": "ma_protocol_search_003_taxonomy_redteam", "title": "noise", "started_at": 103},
+                {"id": "bench-1", "source": "ma_bench_003b", "title": "noise", "started_at": 102},
+                {"id": "deep-smoke", "source": "deep_skill_smoke", "title": "noise", "started_at": 101},
+                {"id": "control-1", "source": "control_surface_stage5_rerun_control", "title": "noise", "started_at": 100.5},
+                {"id": "tui-1", "source": "tui", "title": "real", "started_at": 100},
+            ]
+
+    monkeypatch.setattr(server, "_get_db", lambda: _DB())
+
+    resp = server.handle_request({"id": "1", "method": "session.list", "params": {}})
+
+    assert resp is not None
+    assert "result" in resp
+    assert [row["id"] for row in resp["result"]["sessions"]] == ["tui-1"]
+
+
 # --------------------------------------------------------------------------
 # session.delete — TUI resume picker `d` key
 # --------------------------------------------------------------------------
@@ -6624,12 +6645,13 @@ def test_session_activate_switches_live_session_without_closing_siblings(monkeyp
 
 
 def test_session_most_recent_returns_first_non_denied(monkeypatch):
-    """Drops `tool` rows like session.list does, returns the first hit."""
+    """Drops internal rows like session.list does, returns the first human hit."""
 
     class _DB:
         def list_sessions_rich(self, *, source=None, limit=200, order_by_last_active=False, compact_rows=False):
             return [
-                {"id": "tool-1", "source": "tool", "title": "noise", "started_at": 100},
+                {"id": "tool-1", "source": "tool", "title": "noise", "started_at": 102},
+                {"id": "ma-1", "source": "ma_protocol_search_003_taxonomy_redteam", "title": "noise", "started_at": 101},
                 {"id": "tui-1", "source": "tui", "title": "real", "started_at": 99},
             ]
 
@@ -6646,8 +6668,18 @@ def test_session_most_recent_returns_first_non_denied(monkeypatch):
 
 def test_session_most_recent_returns_null_when_only_tool_rows(monkeypatch):
     class _DB:
-        def list_sessions_rich(self, *, source=None, limit=200, order_by_last_active=False, compact_rows=False):
-            return [{"id": "tool-1", "source": "tool", "started_at": 1}]
+        def list_sessions_rich(
+            self,
+            *,
+            source=None,
+            limit=200,
+            order_by_last_active=False,
+            compact_rows=False,
+        ):
+            return [
+                {"id": "tool-1", "source": "tool", "started_at": 2},
+                {"id": "ma-1", "source": "ma_bench_003b", "started_at": 1},
+            ]
 
     monkeypatch.setattr(server, "_get_db", lambda: _DB())
 
