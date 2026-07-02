@@ -45,6 +45,7 @@ import type { RpcEvent } from '@/types/hermes'
 
 import type { ClientSessionState } from '../../../types'
 
+import { applySessionInfoRunningState } from './running-state'
 import { hasSessionInfoStatePatch, sessionInfoStatePatch, SUBAGENT_EVENT_TYPES, toTodoPayload } from './utils'
 
 interface GatewayEventDeps {
@@ -176,37 +177,8 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
           }))
         }
 
-        if (apply) {
-          if (runningChanged && sessionId) {
-            updateSessionState(sessionId, state => {
-              const busy = Boolean(payload!.running)
-
-              if (state.busy === busy && (busy || !state.awaitingResponse)) {
-                return state
-              }
-
-              if (busy) {
-                return {
-                  ...state,
-                  busy,
-                  turnStartedAt: state.turnStartedAt ?? Date.now()
-                }
-              }
-
-              if (state.awaitingResponse && !state.sawAssistantPayload) {
-                return state
-              }
-
-              return {
-                ...state,
-                awaitingResponse: false,
-                busy,
-                pendingBranchGroup: null,
-                streamId: null,
-                turnStartedAt: null
-              }
-            })
-          }
+        if (runningChanged && sessionId && (apply || explicitSid)) {
+          updateSessionState(sessionId, state => applySessionInfoRunningState(state, Boolean(payload!.running)))
         }
 
         if (payload?.usage && (!explicitSid || isActiveEvent)) {
