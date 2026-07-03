@@ -110,6 +110,7 @@ import { useContextSuggestions } from './session/hooks/use-context-suggestions'
 import { useCwdActions } from './session/hooks/use-cwd-actions'
 import { useHermesConfig } from './session/hooks/use-hermes-config'
 import { useMessageStream } from './session/hooks/use-message-stream'
+import { useHydrateStuckSessionAfterGatewayReconnect } from './session/hooks/use-message-stream/reconnect-recovery'
 import { useModelControls } from './session/hooks/use-model-controls'
 import { usePreviewRouting } from './session/hooks/use-preview-routing'
 import { usePromptActions } from './session/hooks/use-prompt-actions'
@@ -580,6 +581,14 @@ export function DesktopController() {
       // Non-fatal: next poll or manual refresh can hydrate.
     }
   }, [activeSessionIdRef, busyRef, selectedStoredSessionIdRef, updateSessionState])
+
+  useHydrateStuckSessionAfterGatewayReconnect({
+    activeSessionIdRef,
+    gatewayState,
+    hydrateFromStoredSession,
+    selectedStoredSessionIdRef,
+    sessionStateByRuntimeIdRef
+  })
 
   const { handleGatewayEvent } = useMessageStream({
     activeSessionIdRef,
