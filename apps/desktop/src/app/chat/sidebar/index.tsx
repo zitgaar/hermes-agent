@@ -120,8 +120,8 @@ import {
   useRepoWorktreeMap
 } from './projects'
 import { SidebarBlankState, SidebarPinnedEmptyState, SidebarSessionSkeletons } from './section-states'
-import { SidebarSessionsSection, VIRTUALIZE_THRESHOLD } from './sessions-section'
 import { sortAgentSessionsByRecency } from './session-sort'
+import { SidebarSessionsSection, VIRTUALIZE_THRESHOLD } from './sessions-section'
 
 // Non-session groups (messaging platforms) stay compact: show a few rows up
 // front, reveal more in larger steps on demand. Keeps a busy platform from
