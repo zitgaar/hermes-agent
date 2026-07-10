@@ -19,6 +19,7 @@ from agent.usage_pricing import (
     resolve_billing_route,
 )
 from hermes_cli.model_switch import _model_sort_key
+from hermes_cli.codex_models import DEFAULT_CODEX_MODELS, _add_forward_compat_models
 
 
 class TestGpt56SortInvariants:
@@ -81,6 +82,23 @@ class TestGpt56PricingRoute:
                 _OFFICIAL_DOCS_PRICING[("openai", f"{base}-pro")]
                 is _OFFICIAL_DOCS_PRICING[("openai", base)]
             ), base
+
+
+class TestGpt56CodexCatalog:
+    def test_codex_default_catalog_uses_supported_non_pro_slugs(self):
+        assert DEFAULT_CODEX_MODELS[:3] == [
+            "gpt-5.6-sol",
+            "gpt-5.6-terra",
+            "gpt-5.6-luna",
+        ]
+        assert not any(model.startswith("gpt-5.6-") and model.endswith("-pro") for model in DEFAULT_CODEX_MODELS)
+
+    def test_forward_compat_does_not_synthesize_unsupported_pro_slugs(self):
+        models = _add_forward_compat_models(["gpt-5.5"])
+        assert "gpt-5.6-sol" in models
+        assert "gpt-5.6-terra" in models
+        assert "gpt-5.6-luna" in models
+        assert not any(model.startswith("gpt-5.6-") and model.endswith("-pro") for model in models)
 
 
 class TestGpt56CodexCompaction:
