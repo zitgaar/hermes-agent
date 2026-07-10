@@ -5887,7 +5887,14 @@ def test_session_list_returns_clean_error_when_state_db_is_unavailable(monkeypat
 
 def test_session_list_hides_internal_worker_sources(monkeypatch):
     class _DB:
-        def list_sessions_rich(self, *, source=None, limit=200, order_by_last_active=False):
+        def list_sessions_rich(
+            self,
+            *,
+            source=None,
+            limit=200,
+            order_by_last_active=False,
+            compact_rows=False,
+        ):
             return [
                 {"id": "tool-1", "source": "tool", "title": "noise", "started_at": 104},
                 {"id": "ma-1", "source": "ma_protocol_search_003_taxonomy_redteam", "title": "noise", "started_at": 103},
