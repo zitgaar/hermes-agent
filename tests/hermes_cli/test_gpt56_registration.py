@@ -103,15 +103,18 @@ class TestGpt56CodexCatalog:
 
 
 class TestGpt56ReasoningDefaults:
-    def test_moa_codex_roles_default_to_xhigh_reasoning(self):
+    def test_moa_codex_roles_default_to_xhigh_fast_by_model(self):
         expected = {
             "reasoning": {
                 "enabled": True,
                 "effort": "xhigh",
-            }
+            },
+            "service_tier": "fast",
         }
-        assert DEFAULT_CONFIG["auxiliary"]["moa_reference"]["extra_body"] == expected
-        assert DEFAULT_CONFIG["auxiliary"]["moa_aggregator"]["extra_body"] == expected
+        for task in ("moa_reference", "moa_aggregator"):
+            task_config = DEFAULT_CONFIG["auxiliary"][task]
+            assert task_config["extra_body"] == {}
+            assert task_config["model_extra_body"]["openai-codex:gpt-5.6-sol"] == expected
 
 
 class TestGpt56CodexCompaction:
