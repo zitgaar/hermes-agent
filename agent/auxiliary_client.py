@@ -935,6 +935,14 @@ class _CodexCompletionsAdapter:
                     }
                     resp_kwargs["include"] = ["reasoning.encrypted_content"]
 
+            # Auxiliary config uses the same human-facing Fast aliases as the
+            # main Agent.  Codex Responses expects OpenAI Priority Processing on
+            # the wire, so normalize ``fast``/``on`` to ``priority``.  Normal/off
+            # aliases intentionally omit the request field.
+            service_tier = str(extra_body.get("service_tier") or "").strip().lower()
+            if service_tier in {"fast", "priority", "on"}:
+                resp_kwargs["service_tier"] = "priority"
+
         # Tools support for auxiliary callers (e.g. skills_hub) that pass function schemas
         tools = kwargs.get("tools")
         if tools:
@@ -3583,6 +3591,38 @@ def _auth_refresh_provider_for_route(
     return normalized
 
 
+def _model_extra_body_provider_for_route(
+    route_label: Optional[str],
+    client_base_url: str,
+) -> str:
+    """Resolve a concrete provider name for model-specific request extras.
+
+    Fallback route labels may be decorated (for example
+    ``fallback_chain[0](openrouter)`` or ``main_agent(openai-codex)``). Prefer
+    endpoint inference when available, then unwrap the decorated provider.
+    """
+    inferred = _auth_refresh_provider_for_route("auto", client_base_url)
+    if inferred and inferred != "auto":
+        return inferred
+
+    label = str(route_label or "auto").strip().lower()
+    if label.endswith(")") and "(" in label:
+        label = label.rsplit("(", 1)[1][:-1].strip()
+    return _normalize_aux_provider(label)
+
+
+def _effective_task_extra_body(
+    task: Optional[str],
+    provider: Optional[str],
+    model: Optional[str],
+    call_extra_body: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Merge task/model config with explicit per-call request extras."""
+    effective = _get_task_extra_body(task, provider=provider, model=model)
+    effective.update(call_extra_body or {})
+    return effective
+
+
 def _call_fallback_candidate_sync(
     fb_client: Any,
     fb_model: Optional[str],
@@ -3594,7 +3634,7 @@ def _call_fallback_candidate_sync(
     max_tokens: Optional[int],
     tools: Optional[list],
     effective_timeout: float,
-    effective_extra_body: dict,
+    call_extra_body: dict,
 ) -> Optional[Any]:
     """Call one fallback candidate with stale-credential recovery.
 
@@ -3612,6 +3652,9 @@ def _call_fallback_candidate_sync(
     caller can continue to the next fallback layer. Non-auth errors raise.
     """
     fb_base = str(getattr(fb_client, "base_url", "") or "")
+    fb_provider = _model_extra_body_provider_for_route(fb_label, fb_base)
+    effective_extra_body = _effective_task_extra_body(
+        task, fb_provider, fb_model, call_extra_body)
     fb_kwargs = _build_call_kwargs(
         fb_label, fb_model, messages,
         temperature=temperature, max_tokens=max_tokens,
@@ -3627,11 +3670,17 @@ def _call_fallback_candidate_sync(
         if fb_provider not in {"auto", "", None} and _refresh_provider_credentials(fb_provider):
             retry_client, retry_model = _get_cached_client(fb_provider, fb_model)
             if retry_client is not None:
+                retry_extra_body = _effective_task_extra_body(
+                    task,
+                    fb_provider,
+                    retry_model or fb_model,
+                    call_extra_body,
+                )
                 retry_kwargs = _build_call_kwargs(
                     fb_provider, retry_model or fb_model, messages,
                     temperature=temperature, max_tokens=max_tokens,
                     tools=tools, timeout=effective_timeout,
-                    extra_body=effective_extra_body,
+                    extra_body=retry_extra_body,
                     base_url=str(getattr(retry_client, "base_url", "") or fb_base))
                 try:
                     return _validate_llm_response(
@@ -3663,10 +3712,13 @@ async def _call_fallback_candidate_async(
     max_tokens: Optional[int],
     tools: Optional[list],
     effective_timeout: float,
-    effective_extra_body: dict,
+    call_extra_body: dict,
 ) -> Optional[Any]:
     """Async mirror of :func:`_call_fallback_candidate_sync`."""
     fb_base = str(getattr(fb_client, "base_url", "") or "")
+    fb_provider = _model_extra_body_provider_for_route(fb_label, fb_base)
+    effective_extra_body = _effective_task_extra_body(
+        task, fb_provider, fb_model, call_extra_body)
     fb_kwargs = _build_call_kwargs(
         fb_label, fb_model, messages,
         temperature=temperature, max_tokens=max_tokens,
@@ -3683,11 +3735,17 @@ async def _call_fallback_candidate_async(
             retry_client, retry_model = _get_cached_client(
                 fb_provider, fb_model, async_mode=True)
             if retry_client is not None:
+                retry_extra_body = _effective_task_extra_body(
+                    task,
+                    fb_provider,
+                    retry_model or fb_model,
+                    call_extra_body,
+                )
                 retry_kwargs = _build_call_kwargs(
                     fb_provider, retry_model or fb_model, messages,
                     temperature=temperature, max_tokens=max_tokens,
                     tools=tools, timeout=effective_timeout,
-                    extra_body=effective_extra_body,
+                    extra_body=retry_extra_body,
                     base_url=str(getattr(retry_client, "base_url", "") or fb_base))
                 try:
                     return _validate_llm_response(
@@ -6068,13 +6126,52 @@ def _effective_aux_timeout(task: str, timeout: Optional[float]) -> float:
     return effective
 
 
-def _get_task_extra_body(task: str) -> Dict[str, Any]:
-    """Read auxiliary.<task>.extra_body and return a shallow copy when valid."""
+def _get_task_extra_body(
+    task: Optional[str],
+    provider: Optional[str] = None,
+    model: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Return request extras for an auxiliary task and optional model.
+
+    ``auxiliary.<task>.extra_body`` remains the task-wide base.  A model-specific
+    mapping under ``model_extra_body`` can then override it without leaking
+    provider-specific controls (for example Codex reasoning or Fast Priority
+    Processing) into the task's other models::
+
+        model_extra_body:
+          openai-codex:gpt-5.6-sol:
+            reasoning: {enabled: true, effort: xhigh}
+            service_tier: fast
+
+    A fully-qualified ``provider:model`` key wins over a model-only key.
+    """
+    if not task:
+        return {}
     task_config = _get_auxiliary_task_config(task)
     raw = task_config.get("extra_body")
-    if isinstance(raw, dict):
-        return dict(raw)
-    return {}
+    resolved = dict(raw) if isinstance(raw, dict) else {}
+
+    per_model = task_config.get("model_extra_body")
+    if not isinstance(per_model, dict) or not model:
+        return resolved
+
+    provider_key = str(provider or "").strip().lower()
+    model_key = str(model or "").strip().lower()
+    candidates = [model_key]
+    if provider_key:
+        candidates.insert(0, f"{provider_key}:{model_key}")
+
+    normalized = {
+        str(key).strip().lower(): value
+        for key, value in per_model.items()
+        if isinstance(key, str)
+    }
+    for key in candidates:
+        override = normalized.get(key)
+        if isinstance(override, dict):
+            resolved.update(override)
+            break
+    return resolved
 
 
 # ---------------------------------------------------------------------------
@@ -6432,8 +6529,7 @@ def call_llm(
         task, provider, model, base_url, api_key)
     if api_mode:
         resolved_api_mode = api_mode
-    effective_extra_body = _get_task_extra_body(task)
-    effective_extra_body.update(extra_body or {})
+    call_extra_body = dict(extra_body or {})
 
     if task == "vision":
         effective_provider, client, final_model = resolve_vision_provider_client(
@@ -6502,10 +6598,21 @@ def call_llm(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
                 f"Run: hermes setup")
 
+    # Resolve model-specific request controls only after the concrete route is
+    # known. This prevents Codex-only reasoning/Fast controls from leaking into
+    # an unavailable-client or runtime fallback provider.
+    _base_info = str(getattr(client, "base_url", resolved_base_url) or "")
+    extra_body_provider = _model_extra_body_provider_for_route(
+        resolved_provider, _base_info)
+    effective_extra_body = _effective_task_extra_body(
+        task,
+        extra_body_provider,
+        final_model or resolved_model,
+        call_extra_body,
+    )
     effective_timeout = _effective_aux_timeout(task, timeout)
 
     # Log what we're about to do — makes auxiliary operations visible
-    _base_info = str(getattr(client, "base_url", resolved_base_url) or "")
     if task:
         logger.info("Auxiliary %s: using %s (%s)%s",
                      task, resolved_provider or "auto", final_model or "default",
@@ -6933,7 +7040,7 @@ def call_llm(
                     task=task, messages=messages,
                     temperature=temperature, max_tokens=max_tokens,
                     tools=tools, effective_timeout=effective_timeout,
-                    effective_extra_body=effective_extra_body)
+                    call_extra_body=call_extra_body)
                 if fb_resp is not None:
                     return fb_resp
                 # The candidate had a stale/unrefreshable credential and was
@@ -6947,7 +7054,7 @@ def call_llm(
                         task=task, messages=messages,
                         temperature=temperature, max_tokens=max_tokens,
                         tools=tools, effective_timeout=effective_timeout,
-                        effective_extra_body=effective_extra_body)
+                        call_extra_body=call_extra_body)
                     if fb_resp is not None:
                         return fb_resp
             # All fallback layers exhausted — emit a single user-visible
@@ -7049,8 +7156,7 @@ async def async_call_llm(
     """
     resolved_provider, resolved_model, resolved_base_url, resolved_api_key, resolved_api_mode = _resolve_task_provider_model(
         task, provider, model, base_url, api_key)
-    effective_extra_body = _get_task_extra_body(task)
-    effective_extra_body.update(extra_body or {})
+    call_extra_body = dict(extra_body or {})
 
     if task == "vision":
         effective_provider, client, final_model = resolve_vision_provider_client(
@@ -7111,12 +7217,20 @@ async def async_call_llm(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
                 f"Run: hermes setup")
 
+    _client_base = str(getattr(client, "base_url", "") or "")
+    extra_body_provider = _model_extra_body_provider_for_route(
+        resolved_provider, str(_client_base or resolved_base_url or ""))
+    effective_extra_body = _effective_task_extra_body(
+        task,
+        extra_body_provider,
+        final_model or resolved_model,
+        call_extra_body,
+    )
     effective_timeout = _effective_aux_timeout(task, timeout)
 
     # Pass the client's actual base_url (not just resolved_base_url) so
     # endpoint-specific temperature overrides can distinguish
     # api.moonshot.ai vs api.kimi.com/coding even on auto-detected routes.
-    _client_base = str(getattr(client, "base_url", "") or "")
     kwargs = _build_call_kwargs(
         resolved_provider, final_model, messages,
         temperature=temperature, max_tokens=max_tokens,
@@ -7442,7 +7556,7 @@ async def async_call_llm(
                     task=task, messages=messages,
                     temperature=temperature, max_tokens=max_tokens,
                     tools=tools, effective_timeout=effective_timeout,
-                    effective_extra_body=effective_extra_body)
+                    call_extra_body=call_extra_body)
                 if fb_resp is not None:
                     return fb_resp
                 # Stale/unrefreshable candidate credential — quarantined; walk
@@ -7458,7 +7572,7 @@ async def async_call_llm(
                         task=task, messages=messages,
                         temperature=temperature, max_tokens=max_tokens,
                         tools=tools, effective_timeout=effective_timeout,
-                        effective_extra_body=effective_extra_body)
+                        call_extra_body=call_extra_body)
                     if fb_resp is not None:
                         return fb_resp
             # All fallback layers exhausted — warn before re-raising. (#26882)
