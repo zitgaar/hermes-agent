@@ -20,6 +20,7 @@ from agent.usage_pricing import (
 )
 from hermes_cli.model_switch import _model_sort_key
 from hermes_cli.codex_models import DEFAULT_CODEX_MODELS, _add_forward_compat_models
+from hermes_cli.config import DEFAULT_CONFIG
 
 
 class TestGpt56SortInvariants:
@@ -99,6 +100,18 @@ class TestGpt56CodexCatalog:
         assert "gpt-5.6-terra" in models
         assert "gpt-5.6-luna" in models
         assert not any(model.startswith("gpt-5.6-") and model.endswith("-pro") for model in models)
+
+
+class TestGpt56ReasoningDefaults:
+    def test_moa_codex_roles_default_to_xhigh_reasoning(self):
+        expected = {
+            "reasoning": {
+                "enabled": True,
+                "effort": "xhigh",
+            }
+        }
+        assert DEFAULT_CONFIG["auxiliary"]["moa_reference"]["extra_body"] == expected
+        assert DEFAULT_CONFIG["auxiliary"]["moa_aggregator"]["extra_body"] == expected
 
 
 class TestGpt56CodexCompaction:
