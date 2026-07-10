@@ -1734,7 +1734,12 @@ DEFAULT_CONFIG = {
             "base_url": "",
             "api_key": "",
             "timeout": 900,
-            "extra_body": {},
+            "extra_body": {
+                "reasoning": {
+                    "enabled": True,
+                    "effort": "xhigh",
+                }
+            },
         },
         "moa_aggregator": {
             "provider": "auto",
@@ -1742,7 +1747,12 @@ DEFAULT_CONFIG = {
             "base_url": "",
             "api_key": "",
             "timeout": 900,
-            "extra_body": {},
+            "extra_body": {
+                "reasoning": {
+                    "enabled": True,
+                    "effort": "xhigh",
+                }
+            },
         },
     },
     
