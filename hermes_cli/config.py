@@ -1741,7 +1741,6 @@ DEFAULT_CONFIG = {
                         "enabled": True,
                         "effort": "xhigh",
                     },
-                    "service_tier": "fast",
                 }
             },
         },
@@ -1758,7 +1757,6 @@ DEFAULT_CONFIG = {
                         "enabled": True,
                         "effort": "xhigh",
                     },
-                    "service_tier": "fast",
                 }
             },
         },
