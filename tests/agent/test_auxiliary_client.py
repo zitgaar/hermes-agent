@@ -1,5 +1,6 @@
 """Tests for agent.auxiliary_client resolution chain, provider overrides, and model overrides."""
 
+import asyncio
 import base64
 import json
 import logging
@@ -20,6 +21,9 @@ from agent.auxiliary_client import (
     _build_call_kwargs,
     _read_codex_access_token,
     _get_provider_chain,
+    _get_task_extra_body,
+    _call_fallback_candidate_async,
+    _call_fallback_candidate_sync,
     _is_payment_error,
     _is_rate_limit_error,
     _is_model_not_found_error,
@@ -3781,6 +3785,113 @@ class TestAuxiliaryPoolRotationRetry:
         mock_fallback.assert_not_called()
 
 
+class TestAuxiliaryModelSpecificExtraBody:
+    def test_codex_gpt56_override_does_not_leak_to_other_reference_models(self, monkeypatch):
+        monkeypatch.setattr(
+            "agent.auxiliary_client._get_auxiliary_task_config",
+            lambda _task: {
+                "extra_body": {"shared": True},
+                "model_extra_body": {
+                    "gpt-5.6-sol": {"fallback": True},
+                    "openai-codex:gpt-5.6-sol": {
+                        "reasoning": {"enabled": True, "effort": "xhigh"},
+                        "service_tier": "fast",
+                    },
+                },
+            },
+        )
+
+        codex = _get_task_extra_body(
+            "moa_reference",
+            provider="openai-codex",
+            model="gpt-5.6-sol",
+        )
+        other = _get_task_extra_body(
+            "moa_reference",
+            provider="deepseek",
+            model="deepseek-v4-pro",
+        )
+
+        assert codex == {
+            "shared": True,
+            "reasoning": {"enabled": True, "effort": "xhigh"},
+            "service_tier": "fast",
+        }
+        assert other == {"shared": True}
+
+    @staticmethod
+    def _fallback_config(_task):
+        return {
+            "extra_body": {"shared": True},
+            "model_extra_body": {
+                "openai-codex:gpt-5.6-sol": {
+                    "reasoning": {"enabled": True, "effort": "xhigh"},
+                    "service_tier": "fast",
+                },
+            },
+        }
+
+    @staticmethod
+    def _valid_response(content="fallback-ok"):
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
+        )
+
+    def test_sync_fallback_recomputes_model_extra_body(self, monkeypatch):
+        monkeypatch.setattr(
+            "agent.auxiliary_client._get_auxiliary_task_config",
+            self._fallback_config,
+        )
+        client = MagicMock(base_url="https://api.deepseek.com/v1")
+        client.chat.completions.create.return_value = self._valid_response()
+
+        _call_fallback_candidate_sync(
+            client,
+            "deepseek-v4-pro",
+            "fallback_chain[0](deepseek)",
+            task="moa_reference",
+            messages=[{"role": "user", "content": "hi"}],
+            temperature=None,
+            max_tokens=64,
+            tools=None,
+            effective_timeout=30,
+            call_extra_body={"per_call": True},
+        )
+
+        sent = client.chat.completions.create.call_args.kwargs["extra_body"]
+        assert sent == {"shared": True, "per_call": True}
+        assert "reasoning" not in sent
+        assert "service_tier" not in sent
+
+    def test_async_fallback_recomputes_model_extra_body(self, monkeypatch):
+        monkeypatch.setattr(
+            "agent.auxiliary_client._get_auxiliary_task_config",
+            self._fallback_config,
+        )
+        client = MagicMock(base_url="https://api.deepseek.com/v1")
+        client.chat.completions.create = AsyncMock(return_value=self._valid_response())
+
+        asyncio.run(
+            _call_fallback_candidate_async(
+                client,
+                "deepseek-v4-pro",
+                "fallback_chain[0](deepseek)",
+                task="moa_reference",
+                messages=[{"role": "user", "content": "hi"}],
+                temperature=None,
+                max_tokens=64,
+                tools=None,
+                effective_timeout=30,
+                call_extra_body={"per_call": True},
+            )
+        )
+
+        sent = client.chat.completions.create.call_args.kwargs["extra_body"]
+        assert sent == {"shared": True, "per_call": True}
+        assert "reasoning" not in sent
+        assert "service_tier" not in sent
+
+
 class TestCodexAdapterReasoningTranslation:
     """Verify _CodexCompletionsAdapter translates extra_body.reasoning
     into the Responses API's top-level reasoning + include fields, matching
@@ -3869,6 +3980,26 @@ class TestCodexAdapterReasoningTranslation:
             extra_body={"reasoning": {"effort": "high"}},
         )
         assert captured.get("reasoning") == {"effort": "high", "summary": "auto"}
+
+    def test_reasoning_effort_xhigh_and_fast_passed_to_codex(self):
+        adapter, captured = self._build_adapter()
+        adapter.create(
+            messages=[{"role": "user", "content": "hi"}],
+            extra_body={
+                "reasoning": {"effort": "xhigh"},
+                "service_tier": "fast",
+            },
+        )
+        assert captured.get("reasoning") == {"effort": "xhigh", "summary": "auto"}
+        assert captured.get("service_tier") == "priority"
+
+    def test_normal_service_tier_is_omitted(self):
+        adapter, captured = self._build_adapter()
+        adapter.create(
+            messages=[{"role": "user", "content": "hi"}],
+            extra_body={"service_tier": "normal"},
+        )
+        assert "service_tier" not in captured
 
     def test_reasoning_disabled_omits_reasoning_and_include(self):
         adapter, captured = self._build_adapter()

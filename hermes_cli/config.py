@@ -1734,10 +1734,14 @@ DEFAULT_CONFIG = {
             "base_url": "",
             "api_key": "",
             "timeout": 900,
-            "extra_body": {
-                "reasoning": {
-                    "enabled": True,
-                    "effort": "xhigh",
+            "extra_body": {},
+            "model_extra_body": {
+                "openai-codex:gpt-5.6-sol": {
+                    "reasoning": {
+                        "enabled": True,
+                        "effort": "xhigh",
+                    },
+                    "service_tier": "fast",
                 }
             },
         },
@@ -1747,10 +1751,14 @@ DEFAULT_CONFIG = {
             "base_url": "",
             "api_key": "",
             "timeout": 900,
-            "extra_body": {
-                "reasoning": {
-                    "enabled": True,
-                    "effort": "xhigh",
+            "extra_body": {},
+            "model_extra_body": {
+                "openai-codex:gpt-5.6-sol": {
+                    "reasoning": {
+                        "enabled": True,
+                        "effort": "xhigh",
+                    },
+                    "service_tier": "fast",
                 }
             },
         },
