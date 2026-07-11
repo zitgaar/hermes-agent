@@ -109,6 +109,18 @@ def test_existing_model_authored_bar_is_replaced() -> None:
     assert text.splitlines()[1] == "Body"
 
 
+def test_legacy_human_language_marker_is_removed_when_runtime_bar_renders() -> None:
+    receipt = _completed_receipt()
+    apply_turn_facts(receipt, {"human_language": {"observed": True}})
+
+    text, changed = apply_route_depth_bar("人话✓｜本轮\nBody", receipt)
+
+    assert changed is True
+    assert text.count("人话 ✓") == 1
+    assert "人话✓｜本轮" not in text
+    assert text.splitlines()[1] == "Body"
+
+
 def test_runtime_facts_surface_tools_coordination_and_human_language() -> None:
     receipt = _completed_receipt()
     apply_turn_facts(
@@ -925,7 +937,7 @@ def test_coordination_moa_breakdown_accepts_singular_aggregator_without_explicit
     _assert_single_coordination_field(format_route_depth_bar(receipt), "协同 Agent 5")
 
 
-def test_deep_fact_dict_is_ignored() -> None:
+def test_deep_fact_dict_renders_only_with_child_session_evidence() -> None:
     receipt = _completed_receipt()
     apply_turn_facts(
         receipt,
@@ -941,4 +953,5 @@ def test_deep_fact_dict_is_ignored() -> None:
     bar = format_route_depth_bar(receipt)
 
     assert bar.startswith("路径：native｜原因：runtime_default")
-    assert "Deep" not in bar
+    assert "Deep ✓ review" in bar
+    _assert_single_coordination_field(bar, "协同 Agent 2")

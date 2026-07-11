@@ -79,6 +79,21 @@ def _client_coordination_turn_fact_dicts(agent):
         yield facts
 
 
+def _trusted_omo_turn_fact_dicts(messages):
+    """Yield OMO facts from runtime-owned trusted tool messages only."""
+    try:
+        from agent.omo_turn_facts_adapter import extract_omo_turn_facts_from_messages
+    except Exception:
+        return
+    try:
+        facts_list = extract_omo_turn_facts_from_messages(messages)
+    except Exception:
+        return
+    for facts in facts_list:
+        if isinstance(facts, Mapping):
+            yield facts
+
+
 def _apply_turn_fact_dicts(receipt: TurnReceipt, fact_dicts) -> None:
     for facts in fact_dicts or []:
         try:
@@ -125,6 +140,7 @@ def _apply_runtime_route_depth_bar(
         messages=current_turn_messages,
         agent=agent,
     )
+    _apply_turn_fact_dicts(receipt, _trusted_omo_turn_fact_dicts(current_turn_messages))
     _apply_turn_fact_dicts(receipt, _runtime_turn_fact_dicts(agent))
     _apply_turn_fact_dicts(receipt, _client_coordination_turn_fact_dicts(agent))
     if isinstance(user_message, str) and user_message.startswith(("说人话", "用人话")):
