@@ -308,6 +308,10 @@ def _prepare_deep_runtime_invocation(
     plugin_user_context: str,
 ) -> DeepRuntimePreparation:
     """Run explicit leading ``deep:`` turns through runtime Deep MA."""
+    # Deep runtime facts are strictly per-turn.  Clear stale Deep evidence
+    # before detection so an ordinary later turn cannot inherit a prior Deep
+    # route/coordination bar when the finalizer consumes ``agent._turn_facts``.
+    agent._turn_facts = {}
     try:
         from agent.deep_invocation import (
             detect_deep_invocation,
