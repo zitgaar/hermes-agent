@@ -119,6 +119,39 @@ def _fire_approval_hook(hook_name: str, **kwargs) -> None:
         logger.debug("Approval hook %s dispatch failed: %s", hook_name, exc)
 
 
+def _record_approval_human_status(
+    session_key: str,
+    status: str,
+    approval_data: dict,
+    *,
+    choice: Optional[str] = None,
+    reason: Optional[str] = None,
+    surface: str = "gateway",
+    detail: Optional[str] = None,
+) -> None:
+    """Best-effort human-status lifecycle record for approval waits."""
+    try:
+        from agent.mechanism_ledger import record_human_action_event
+
+        record_human_action_event(
+            session_id=session_key,
+            status=status,
+            kind="approval",
+            source="approval",
+            request_id=approval_data.get("approval_id") or approval_data.get("pattern_key"),
+            human_action_kind="approve",
+            summary="需要你确认",
+            detail=detail or "等待批准执行命令",
+            call_to_action="请批准或拒绝",
+            choice=choice,
+            reason=reason,
+            surface=surface,
+            pattern_key=approval_data.get("pattern_key"),
+            pattern_keys=approval_data.get("pattern_keys"),
+        )
+    except Exception:
+        logger.debug("failed to record approval human-status event", exc_info=True)
+
 
 def set_current_session_key(session_key: str) -> contextvars.Token[str]:
     """Bind the active approval session key to the current context."""
@@ -2431,6 +2464,8 @@ def _await_gateway_decision(session_key: str, notify_cb, approval_data: dict,
     notify callback raised.  Persistence of an approved choice and building
     the final tool-facing result dict remain the caller's responsibility.
     """
+    approval_data = dict(approval_data or {})
+    approval_data.setdefault("approval_id", f"approval-{time.time_ns()}")
     command = approval_data.get("command", "")
     description = approval_data.get("description", "")
     primary_key = approval_data.get("pattern_key", "")
@@ -2439,6 +2474,13 @@ def _await_gateway_decision(session_key: str, notify_cb, approval_data: dict,
     entry = _ApprovalEntry(approval_data)
     with _lock:
         _gateway_queues.setdefault(session_key, []).append(entry)
+
+    _record_approval_human_status(
+        session_key,
+        "requested",
+        approval_data,
+        surface=surface,
+    )
 
     def _drop_entry() -> None:
         with _lock:
@@ -2466,6 +2508,14 @@ def _await_gateway_decision(session_key: str, notify_cb, approval_data: dict,
     except Exception as exc:
         logger.warning("Gateway approval notify failed: %s", exc)
         _drop_entry()
+        _record_approval_human_status(
+            session_key,
+            "cancelled",
+            approval_data,
+            choice="notify_failed",
+            surface=surface,
+            detail="审批提示发送失败",
+        )
         return {"resolved": False, "choice": None, "notify_failed": True}
 
     # Block until the user responds or timeout (default 5 min). Poll in short
@@ -2521,6 +2571,33 @@ def _await_gateway_decision(session_key: str, notify_cb, approval_data: dict,
     # mean the user never responded; report that explicitly so plugins can
     # distinguish timeout from explicit deny.
     _outcome = "timeout" if not resolved else (choice if choice else "timeout")
+    if not resolved:
+        _record_approval_human_status(
+            session_key,
+            "timeout",
+            approval_data,
+            choice="timeout",
+            surface=surface,
+            detail="等待用户批准超时",
+        )
+    elif choice == "deny":
+        _record_approval_human_status(
+            session_key,
+            "resolved",
+            approval_data,
+            choice="deny",
+            reason=entry.reason,
+            surface=surface,
+            detail="用户已拒绝执行命令",
+        )
+    else:
+        _record_approval_human_status(
+            session_key,
+            "resolved",
+            approval_data,
+            choice=choice or _outcome,
+            surface=surface,
+        )
     _fire_approval_hook(
         "post_approval_response",
         command=command,

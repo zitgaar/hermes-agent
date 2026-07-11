@@ -217,7 +217,7 @@ def _recompute_coordination_count(receipt: TurnReceipt) -> None:
     receipt.coordination_count = total
 
 
-_AUTHORITATIVE_COORDINATION_COMPONENTS = {"explicit", "moa", "omo", "delegate_task"}
+_AUTHORITATIVE_COORDINATION_COMPONENTS = {"explicit", "moa", "omo", "deep", "delegate_task"}
 
 
 def _has_explicit_coordination_total(receipt: TurnReceipt) -> bool:
@@ -510,6 +510,16 @@ def apply_turn_facts(receipt: TurnReceipt, facts: Mapping[str, Any] | None) -> T
         if observed:
             _add_mechanism_segment(receipt, f"OMO {parent_count}+{descendant_count}")
             _set_coordination_component(receipt, "omo", parent_count + descendant_count)
+
+    deep = _as_mapping(facts.get("deep"))
+    if deep:
+        child_count = _count_strings(deep.get("child_session_ids") or [])
+        observed = bool(deep.get("observed")) and child_count > 0
+        if observed:
+            protocol_key = str(deep.get("protocol_key") or "").strip()
+            segment = "Deep ✓" if not protocol_key else f"Deep ✓ {protocol_key}"
+            _add_mechanism_segment(receipt, segment)
+            _set_coordination_component(receipt, "deep", child_count)
 
     coordination = _as_mapping(facts.get("coordination"))
     if coordination:

@@ -71,6 +71,35 @@ _entries: Dict[str, _ClarifyEntry] = {}
 _session_index: Dict[str, List[str]] = {}
 
 
+def _record_clarify_human_status(
+    entry: _ClarifyEntry,
+    status: str,
+    *,
+    choice: str | None = None,
+    detail: str | None = None,
+) -> None:
+    """Best-effort human-status lifecycle record for gateway clarify waits."""
+    try:
+        from agent.mechanism_ledger import record_human_action_event
+
+        has_choices = bool(entry.choices)
+        record_human_action_event(
+            session_id=entry.session_key,
+            status=status,
+            kind="clarify",
+            source="clarify",
+            request_id=entry.clarify_id,
+            human_action_kind="choose" if has_choices else "reply",
+            summary="需要你选择" if has_choices else "需要你回复",
+            detail=detail or entry.question,
+            call_to_action="请选择一个选项" if has_choices else "请回复以继续",
+            choice=choice,
+            choices=list(entry.choices) if entry.choices else None,
+        )
+    except Exception:
+        logger.debug("failed to record clarify human-status event", exc_info=True)
+
+
 # =========================================================================
 # Public API — agent-thread side
 # =========================================================================
@@ -97,6 +126,7 @@ def register(
     with _lock:
         _entries[clarify_id] = entry
         _session_index.setdefault(session_key, []).append(clarify_id)
+    _record_clarify_human_status(entry, "requested")
     return entry
 
 
@@ -131,6 +161,8 @@ def wait_for_response(clarify_id: str, timeout: float) -> Optional[str]:
         if touch_activity_if_due is not None:
             touch_activity_if_due(activity_state, "waiting for user clarify response")
 
+    timed_out = not entry.event.is_set() and entry.response is None
+
     with _lock:
         # Remove from indices regardless of resolution outcome.
         _entries.pop(clarify_id, None)
@@ -139,6 +171,14 @@ def wait_for_response(clarify_id: str, timeout: float) -> Optional[str]:
             ids.remove(clarify_id)
             if not ids:
                 _session_index.pop(entry.session_key, None)
+
+    if timed_out:
+        _record_clarify_human_status(
+            entry,
+            "timeout",
+            choice="timeout",
+            detail="等待用户回复超时",
+        )
 
     return entry.response
 
@@ -158,6 +198,7 @@ def resolve_gateway_clarify(clarify_id: str, response: str) -> bool:
         if entry is None:
             return False
     entry.response = str(response) if response is not None else ""
+    _record_clarify_human_status(entry, "resolved", choice=entry.response)
     entry.event.set()
     return True
 

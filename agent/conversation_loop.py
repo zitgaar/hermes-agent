@@ -25,6 +25,7 @@ import ssl
 import threading
 import time
 import uuid
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from agent.codex_responses_adapter import _summarize_user_message_for_log
@@ -262,6 +263,151 @@ def _print_billing_or_entitlement_guidance(
     for line in message.splitlines():
         agent._vprint(f"{agent.log_prefix}   💡 {line}", force=True)
     return True
+
+
+@dataclass(frozen=True)
+class DeepRuntimePreparation:
+    plugin_user_context: str
+    terminal_response: Optional[str] = None
+    failed: bool = False
+    turn_facts: Dict[str, Any] = field(default_factory=dict)
+
+
+def _append_plugin_context(existing: str, addition: str) -> str:
+    parts = [str(part).strip() for part in (existing, addition) if str(part or "").strip()]
+    return "\n\n".join(parts)
+
+
+def _format_deep_runtime_failure(invocation, result) -> str:
+    branch_lines = []
+    for branch in getattr(result, "branches", []) or []:
+        branch_lines.append(
+            "- "
+            f"{getattr(branch, 'label', '') or getattr(branch, 'role', 'unknown')}: "
+            f"returncode={getattr(branch, 'returncode', 'unknown')}, "
+            f"session_id={getattr(branch, 'session_id', None) or 'missing'}, "
+            f"error={getattr(branch, 'error', '') or '[none]'}"
+        )
+    if not branch_lines:
+        branch_lines.append("- no child branch evidence was produced")
+    degraded = str(getattr(result, "degraded", "") or "DEGRADED=missing_child_evidence")
+    return (
+        "Deep Runtime MA failed: child evidence is incomplete, so Hermes will not "
+        "fall back to the textual /deep scaffold or claim Deep success.\n"
+        f"source={getattr(invocation, 'source', 'unknown')}\n"
+        f"protocol={getattr(result, 'protocol_name', 'unknown')}\n"
+        f"{degraded}\n"
+        + "\n".join(branch_lines)
+    )
+
+
+def _prepare_deep_runtime_invocation(
+    agent,
+    *,
+    user_message: str,
+    plugin_user_context: str,
+) -> DeepRuntimePreparation:
+    """Run explicit leading ``deep:`` turns through runtime Deep MA."""
+    try:
+        from agent.deep_invocation import (
+            detect_deep_invocation,
+            is_deep_skill_invocation_scaffold,
+        )
+    except Exception:
+        return DeepRuntimePreparation(plugin_user_context=plugin_user_context)
+
+    if is_deep_skill_invocation_scaffold(user_message):
+        try:
+            from agent.deep_multi_agent import deep_unavailable_turn_facts
+
+            facts = deep_unavailable_turn_facts("textual_deep_skill_scaffold")
+        except Exception:
+            facts = {}
+        agent._turn_facts = facts
+        return DeepRuntimePreparation(
+            plugin_user_context=plugin_user_context,
+            terminal_response=(
+                "Deep Runtime MA unavailable: this turn used the textual /deep "
+                "skill scaffold. Use a leading `deep:` prefix to request runtime "
+                "child sessions."
+            ),
+            failed=True,
+            turn_facts=facts,
+        )
+
+    invocation = detect_deep_invocation(user_message)
+    if invocation is None:
+        return DeepRuntimePreparation(plugin_user_context=plugin_user_context)
+
+    try:
+        from agent.deep_multi_agent import (
+            build_deep_ma_synthesis_prompt,
+            deep_turn_facts,
+            deep_unavailable_turn_facts,
+            run_deep_multi_agent,
+        )
+    except Exception as exc:
+        facts = {
+            "route": {"actual": "deep/unavailable", "reason": f"import_failed: {exc}"},
+            "deep": {"observed": False, "protocol_key": None, "child_session_ids": []},
+            "coordination": {"observed": False, "agents": 0, "modes": [], "breakdown": {}},
+            "evidence": {"sources": []},
+        }
+        agent._turn_facts = facts
+        return DeepRuntimePreparation(
+            plugin_user_context=plugin_user_context,
+            terminal_response=f"Deep Runtime MA unavailable: {exc}",
+            failed=True,
+            turn_facts=facts,
+        )
+
+    if env_var_enabled("HERMES_DEEP_MA_DISABLE"):
+        facts = deep_unavailable_turn_facts("deep_runtime_disabled")
+        agent._turn_facts = facts
+        return DeepRuntimePreparation(
+            plugin_user_context=plugin_user_context,
+            terminal_response="Deep Runtime MA unavailable: runtime Deep is disabled for this worker.",
+            failed=True,
+            turn_facts=facts,
+        )
+
+    try:
+        result = run_deep_multi_agent(
+            user_instruction=invocation.user_instruction,
+            parent_session_id=getattr(agent, "session_id", "") or "",
+            source=invocation.source,
+        )
+    except Exception as exc:
+        facts = deep_unavailable_turn_facts(f"runtime_exception: {exc}")
+        agent._turn_facts = facts
+        return DeepRuntimePreparation(
+            plugin_user_context=plugin_user_context,
+            terminal_response=f"Deep Runtime MA failed before child evidence completed: {exc}",
+            failed=True,
+            turn_facts=facts,
+        )
+
+    facts = deep_turn_facts(result)
+    agent._turn_facts = facts
+    if not getattr(result, "clean_native_ma", False):
+        return DeepRuntimePreparation(
+            plugin_user_context=plugin_user_context,
+            terminal_response=_format_deep_runtime_failure(invocation, result),
+            failed=True,
+            turn_facts=facts,
+        )
+
+    synthesis_prompt = build_deep_ma_synthesis_prompt(
+        invocation.user_instruction,
+        result,
+        skill_prompt="",
+    )
+    return DeepRuntimePreparation(
+        plugin_user_context=_append_plugin_context(plugin_user_context, synthesis_prompt),
+        terminal_response=None,
+        failed=False,
+        turn_facts=facts,
+    )
 
 
 def _try_refresh_nous_paid_entitlement_credentials(agent) -> bool:
@@ -625,6 +771,35 @@ def run_conversation(
     # so this tally caps same-entry refreshes and lets the fallback chain take
     # over instead of spinning. Reset here so each turn starts fresh. See #26080.
     agent._auth_pool_refresh_counts = {}
+
+    _deep_prepared = _prepare_deep_runtime_invocation(
+        agent,
+        user_message=user_message,
+        plugin_user_context=_plugin_user_context,
+    )
+    _plugin_user_context = _deep_prepared.plugin_user_context
+    if _deep_prepared.terminal_response is not None:
+        final_response = _deep_prepared.terminal_response
+        failed = _deep_prepared.failed
+        _turn_exit_reason = "deep_runtime_failed" if failed else "deep_runtime_completed"
+        messages.append({"role": "assistant", "content": final_response})
+        from agent.turn_finalizer import finalize_turn
+        return finalize_turn(
+            agent,
+            final_response=final_response,
+            api_call_count=api_call_count,
+            interrupted=interrupted,
+            failed=failed,
+            messages=messages,
+            conversation_history=conversation_history,
+            effective_task_id=effective_task_id,
+            turn_id=turn_id,
+            user_message=user_message,
+            original_user_message=original_user_message,
+            _should_review_memory=_should_review_memory,
+            _turn_exit_reason=_turn_exit_reason,
+            _pending_verification_response=_pending_verification_response,
+        )
 
     # Optional opt-in runtime: if api_mode == codex_app_server, hand the
     # turn to the codex app-server subprocess (terminal/file ops/patching

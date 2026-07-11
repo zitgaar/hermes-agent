@@ -8,6 +8,10 @@ from typing import Tuple
 from agent.turn_receipt import TurnReceipt
 
 _ROUTE_BAR_RE = re.compile(r"^\s*路径：[^\n\r]*(?:\r?\n)?", re.UNICODE)
+_LEGACY_HUMAN_LANGUAGE_MARKER_RE = re.compile(
+    r"^\s*人话✓｜本轮[^\n\r]*(?:\r?\n)?",
+    re.UNICODE,
+)
 
 
 def _tool_field(receipt: TurnReceipt) -> str:
@@ -118,6 +122,8 @@ def apply_route_depth_bar(text: str, receipt: TurnReceipt) -> Tuple[str, bool]:
 
     original = text or ""
     body = strip_route_depth_bar(original)
+    if _human_field(receipt.human_language_state) == "人话 ✓":
+        body = _LEGACY_HUMAN_LANGUAGE_MARKER_RE.sub("", body, count=1).lstrip("\n")
     bar = format_route_depth_bar(receipt)
     if body:
         updated = f"{bar}\n{body}"
