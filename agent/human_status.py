@@ -34,6 +34,25 @@ def _event_time(event: dict[str, Any]) -> int:
         return 0
 
 
+def _is_stale_requested_event(
+    event: dict[str, Any],
+    *,
+    now: float,
+    stale_after_seconds: float,
+) -> bool:
+    created_at_ns = _event_time(event)
+    if created_at_ns <= 0:
+        return False
+    try:
+        now_seconds = float(now)
+        stale_after = float(stale_after_seconds)
+    except (TypeError, ValueError):
+        return False
+    if stale_after < 0:
+        return False
+    return now_seconds - (created_at_ns / 1_000_000_000) > stale_after
+
+
 def _text(value: Any) -> str:
     return str(value).strip() if value is not None else ""
 
@@ -148,7 +167,6 @@ def reduce_human_status_events(
 ) -> HumanStatusSnapshot:
     """Reduce recent mechanism events into the current human-facing status."""
 
-    del now, stale_after_seconds  # Reserved for turn/runtime receipt reducers.
     pending: dict[tuple[str, str, str, str], dict[str, Any]] = {}
     latest_terminal: dict[str, Any] | None = None
     latest_any: dict[str, Any] | None = None
@@ -160,6 +178,14 @@ def reduce_human_status_events(
         key = _request_key(event)
         status = _text(event.get("status")).casefold()
         if status == "requested":
+            if _is_stale_requested_event(
+                event,
+                now=now,
+                stale_after_seconds=stale_after_seconds,
+            ):
+                latest_terminal = {**event, "status": "timeout"}
+                pending.pop(key, None)
+                continue
             pending[key] = event
             continue
         if status in {"resolved", "timeout", "cancelled", "canceled", "cancel"}:

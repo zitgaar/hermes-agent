@@ -9,6 +9,76 @@ def _agent(session_id: str = "parent-session") -> SimpleNamespace:
     return SimpleNamespace(session_id=session_id, _turn_facts={})
 
 
+class _FinalizerAgent:
+    def __init__(self) -> None:
+        self.max_iterations = 10
+        self.iteration_budget = SimpleNamespace(remaining=9, used=1, max_total=10)
+        self.model = "test-model"
+        self.provider = "openrouter"
+        self.base_url = ""
+        self.platform = "cli"
+        self.session_id = "parent-session"
+        self.context_compressor = SimpleNamespace(last_prompt_tokens=0)
+        self.session_input_tokens = 0
+        self.session_output_tokens = 0
+        self.session_cache_read_tokens = 0
+        self.session_cache_write_tokens = 0
+        self.session_reasoning_tokens = 0
+        self.session_prompt_tokens = 0
+        self.session_completion_tokens = 0
+        self.session_total_tokens = 0
+        self.session_estimated_cost_usd = 0
+        self.session_cost_status = "unknown"
+        self.session_cost_source = "test"
+        self._turn_facts = {
+            "route": {"actual": "deep/runtime", "reason": "prefix"},
+            "deep": {
+                "observed": True,
+                "protocol_key": "original_triad_critique",
+                "child_session_ids": ["old-a", "old-b", "old-c", "old-d"],
+            },
+            "coordination": {"observed": True, "agents": 4, "modes": ["deep"]},
+            "evidence": {"level": "ok"},
+        }
+        self._tool_guardrail_halt_decision = None
+        self._interrupt_message = None
+        self._response_was_previewed = False
+        self._current_streamed_assistant_text = ""
+        self._current_visible_streamed_assistant_text = ""
+        self._skill_nudge_interval = 0
+        self._iters_since_skill = 0
+        self.valid_tool_names = []
+        self._stream_callback = None
+        self.persisted_messages = None
+
+    def _save_trajectory(self, *_args, **_kwargs) -> None:
+        pass
+
+    def _cleanup_task_resources(self, *_args, **_kwargs) -> None:
+        pass
+
+    def _drop_trailing_empty_response_scaffolding(self, _messages) -> None:
+        pass
+
+    def _file_mutation_verifier_enabled(self) -> bool:
+        return False
+
+    def _turn_completion_explainer_enabled(self) -> bool:
+        return False
+
+    def _persist_session(self, messages, _conversation_history) -> None:
+        self.persisted_messages = list(messages)
+
+    def _drain_pending_steer(self):
+        return None
+
+    def clear_interrupt(self) -> None:
+        pass
+
+    def _sync_external_memory_for_turn(self, **_kwargs) -> None:
+        pass
+
+
 def _clean_result() -> DeepMAResult:
     return DeepMAResult(
         protocol_key="original_triad_critique",
@@ -85,6 +155,48 @@ def test_embedded_deep_literal_does_not_route_to_runtime(monkeypatch) -> None:
     assert prepared.terminal_response is None
     assert prepared.failed is False
     assert prepared.turn_facts == {}
+
+
+def test_non_deep_turn_clears_stale_deep_facts_before_finalizer(monkeypatch) -> None:
+    from agent import conversation_loop
+    from agent.turn_finalizer import finalize_turn
+
+    monkeypatch.setattr("hermes_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+
+    agent = _FinalizerAgent()
+    prepared = conversation_loop._prepare_deep_runtime_invocation(
+        agent,
+        user_message="ordinary later turn after Deep",
+        plugin_user_context="existing",
+    )
+    assert prepared.turn_facts == {}
+    assert agent._turn_facts == {}
+
+    result = finalize_turn(
+        agent,
+        final_response="plain answer",
+        api_call_count=1,
+        interrupted=False,
+        failed=False,
+        messages=[
+            {"role": "user", "content": "ordinary later turn after Deep"},
+            {"role": "assistant", "content": "plain answer"},
+        ],
+        conversation_history=[],
+        effective_task_id="task",
+        turn_id="turn-nondeep",
+        user_message="ordinary later turn after Deep",
+        original_user_message="ordinary later turn after Deep",
+        _should_review_memory=False,
+        _turn_exit_reason="text_response(finish_reason=stop)",
+    )
+
+    final_response = result["final_response"]
+    first_line = final_response.splitlines()[0]
+    assert first_line.startswith("路径：native｜原因：runtime_default")
+    assert "deep/runtime" not in final_response
+    assert "Deep ✓" not in final_response
+    assert "协同 Agent 4" not in final_response
 
 
 def test_degraded_deep_workers_fail_loud_without_synthesis_fallback(monkeypatch) -> None:
